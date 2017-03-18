@@ -1,6 +1,6 @@
 module duck_hunt();
 
-endmodule;
+endmodule
 
 module bird_shifter(clock, load_en, loadnumber, shift_en, s);
   input clock, load_en;
@@ -18,4 +18,18 @@ module bird_shifter(clock, load_en, loadnumber, shift_en, s);
   end
    
     
+endmodule
+
+module random(range, num);
+	input [6:0] range;
+	output [7:0] num;
+	
+	reg [6:0] temp;
+	
+	initial begin
+		temp <= $urandom$range;
+	end
+	
+	assign num = {1'b0, temp[6:0]}
+	
 endmodule
