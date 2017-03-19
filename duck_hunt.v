@@ -57,25 +57,52 @@ module random(range, num);
 	
 endmodule
 	
-module devider(num, clock, reset, clk);
-	input num;
+module delay_counter(clock, reset, q);
 	input clock;
 	input reset;
-	output clk;
-	
-	wire num;
-	reg q;
+	output reg q;
 	
 	always @(posedge clock, negedge reset)
 	begin
 		if (reset == 1'b0)
-			clk <= 0;
+			q <= 0;
 		else if (clock == 1'b1)
 			begin
-				if (clk == 0)
-					clk <= num;// use 26'b10111110101111000010000000 for now (1/s)
+				if (q == 0)
+					q <= 20'b11001011011100110110;//(1/60s)
 				else
-					clk <= clk - 1'b1;
+					q <= q - 1'b1;
 			end
 	end
+endmodule
+
+module frame_counter(num, clock, reset, q); // output 1 if desinated fram number reached.
+	input num;
+	input clock;
+	input reset;
+	output reg q;
+	
+	wire count;
+	reg temp;
+	
+	assign temp = num;
+	assign q = 1'b0;
+	
+	delay_counter(
+		.clock(clock),
+		.reset(reset),
+		.q(count)
+	);
+	
+	always @(*)
+	begin
+		if (count == 20'b00000000000000000000)
+			temp <= temp - 1;
+		else if (temp == 0)
+			temp <= num;
+			q <= 1'b1;
+		else
+			q <= 1'b0;
+	end
+	
 endmodule
