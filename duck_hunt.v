@@ -39,8 +39,58 @@ module bird_shifter(clock, load_en, loadnumber, shift_en, s);
     else if (shift_en)
       shifter <= shifter >> 1;
   end
-   
-    
+endmodule
+
+//Determines where bird should be drawn based on the bird_shifter value. (Grid based, we will figure out the grid size later).
+module bird_pos(clock, shifter, x_out, y_out);
+	input clock;
+	input [19:0] shifter;
+	output reg x_out, y_out;
+	
+	localparam GRID_SIZE = 20;
+	
+	always @(posedge clock) begin
+		if (shifter[19])
+			x_out <= 0*GRID_SIZE;
+		else if (shifter[18])
+			x_out <= 1*GRID_SIZE;
+		else if (shifter[17])
+			x_out <= 2*GRID_SIZE;
+		else if (shifter[16])
+			x_out <= 3*GRID_SIZE;
+		else if (shifter[15])
+			x_out <= 4*GRID_SIZE;
+		else if (shifter[14])
+			x_out <= 5*GRID_SIZE;
+		else if (shifter[13])
+			x_out <= 6*GRID_SIZE;
+		else if (shifter[12])
+			x_out <= 7*GRID_SIZE;
+		else if (shifter[11])
+			x_out <= 8*GRID_SIZE;
+		else if (shifter[10])
+			x_out <= 9*GRID_SIZE;
+		else if (shifter[9])
+			x_out <= 10*GRID_SIZE;
+		else if (shifter[8])
+			x_out <= 11*GRID_SIZE;
+		else if (shifter[7])
+			x_out <= 12*GRID_SIZE;
+		else if (shifter[6])
+			x_out <= 13*GRID_SIZE;
+		else if (shifter[5])
+			x_out <= 14*GRID_SIZE;
+		else if (shifter[4])
+			x_out <= 15*GRID_SIZE;
+		else if (shifter[3])
+			x_out <= 16*GRID_SIZE;
+		else if (shifter[2])
+			x_out <= 17*GRID_SIZE;
+		else if (shifter[1])
+			x_out <= 18*GRID_SIZE;
+		else if (shifter[0])
+			x_out <= 19*GRID_SIZE;	
+	end
 endmodule
 
 module random(range, num);
