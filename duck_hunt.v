@@ -1,3 +1,12 @@
+x
+ x
+  x
+xxxxxx
+  x  x
+ x
+x
+// a bird
+
 module duck_hunt();
 	
 	
@@ -92,17 +101,115 @@ module bird_pos(shifter, x_out, y_out);
 	end
 endmodule
 
-module random(range, num);
-	input [6:0] range;
+module draw(CLOCK_50, x, y, reset, new_x, new_y);
+	input CLOCK_50;
+	input [7:0] x;
+	input [6:0] y;
+	input reset;
+	output [7:0] x;
+	output [6:0] y;
+	
+	reg [3:0] current_state, next_state;
+	
+	localparam  BIRD_0  = 4'b0000,//body 1
+					BIRD_1  = 4'b0001,//head
+					BIRD_2  = 4'b0010,//body 2
+					BIRD_3  = 4'b0011,//body 3
+					BIRD_4  = 4'b0100,//body 4
+					BIRD_5  = 4'b0101,//body 5
+					BIRD_6  = 4'b0110,//body 6
+					BIRD_7  = 4'b0111,//up wing 1
+					BIRD_8  = 4'b1000,//down wing 1
+					BIRD_9  = 4'b1001,//up wing 2
+					BIRD_10 = 4'b1010,//down wing 2
+					BIRD_11 = 4'b1011,//up wing 3
+					BIRD_12 = 4'b1100,//down wing 3
+					END     = 4'b1111;
+	
+	always@(*)
+   begin
+		case (current_state)
+			BIRD_0: nest_state = BIRD_1;
+			BIRD_1: nest_state = BIRD_2;
+			BIRD_2: nest_state = BIRD_3;
+			BIRD_3: nest_state = BIRD_4;
+			BIRD_4: nest_state = BIRD_5;
+			BIRD_5: nest_state = BIRD_6;
+			BIRD_6: nest_state = BIRD_7;
+			BIRD_7: nest_state = BIRD_8;
+			BIRD_8: nest_state = BIRD_9;
+			BIRD_9: nest_state = BIRD_10;
+			BIRD_10: nest_state = BIRD_11;
+			BIRD_11: nest_state = BIRD_12;
+			BIRD_12: nest_state = END;
+			END: next_statae = reset ? BIRD_0 : END;
+         default:     next_state = END;
+      endcase
+   end
+	
+	always @(*)
+   begin // set x
+		case (current_state)
+			BIRD_0: new_x = x;
+			BIRD_1: new_x = x;
+			BIRD_2: new_x = x - 1;
+			BIRD_3: new_x = x - 2;
+			BIRD_4: new_x = x - 3;
+			BIRD_5: new_x = x - 4;
+			BIRD_6: new_x = x - 5;
+			BIRD_7: new_x = x - 3;
+			BIRD_8: new_x = x - 3;
+			BIRD_9: new_x = x - 4;
+			BIRD_10: new_x = x - 4;
+			BIRD_11: new_x = x - 5;
+			BIRD_12: new_x = x - 5;
+      endcase
+	end
+	
+	always @(*)
+   begin // set y
+		case (current_state)
+			BIRD_0: new_y = y;
+			BIRD_1: new_y = y + 1;
+			BIRD_2: new_y = y;
+			BIRD_3: new_y = y;
+			BIRD_4: new_y = y;
+			BIRD_5: new_y = y;
+			BIRD_6: new_y = y;
+			BIRD_7: new_y = y + 1;
+			BIRD_8: new_y = y - 1;
+			BIRD_9: new_y = y + 1;
+			BIRD_10: new_y = y - 1;
+			BIRD_11: new_y = y + 1;
+			BIRD_12: new_y = y - 1;
+      endcase
+	end
+   
+   always @(posedge CLOCK_50)
+	begin:
+		if(reset)
+			current_state <= BIRD_0;
+      else
+			current_state <= next_state;
+   end
+	
+endmodule
+
+module random(num);// output a starting position
 	output [7:0] num;
 	
 	reg [6:0] temp;
+	wire [3:0] layers;
+	wire [4:0] height;
+	
+	assign layers = 3'b111;
 	
 	initial begin
-		temp <= $urandom$range;
+		temp <= $urandom$layers;
 	end
 	
-	assign num = {1'b0, temp[6:0]}
+	assign height = temp*8 + 3'b100;// 8x+4
+	assign num = {4'b000, temp[3:0]}
 	
 endmodule
 	
