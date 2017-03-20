@@ -42,14 +42,13 @@ module bird_shifter(clock, load_en, loadnumber, shift_en, s);
 endmodule
 
 //Determines where bird should be drawn based on the bird_shifter value. (Grid based, we will figure out the grid size later).
-module bird_pos(clock, shifter, x_out, y_out);
-	input clock;
+module bird_pos(shifter, x_out, y_out);
 	input [19:0] shifter;
 	output reg x_out, y_out;
 	
 	localparam GRID_SIZE = 20;
 	
-	always @(posedge clock) begin
+	always @(*) begin
 		if (shifter[19])
 			x_out <= 0*GRID_SIZE;
 		else if (shifter[18])
