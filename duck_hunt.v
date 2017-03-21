@@ -1,23 +1,65 @@
-x
- x
-  x
-xxxxxx
-  x  x
- x
-x
-// a bird
+//x
+// x
+//  x
+//xxxxxx
+//  x  x
+// x
+//x
+// a duck
 
-module duck_hunt();
+module duck_hunt(CLOCK_50, KEY, LEDR,
+		VGA_CLK,   						//	VGA Clock
+		VGA_HS,							//	VGA H_SYNC
+		VGA_VS,							//	VGA V_SYNC
+		VGA_BLANK_N,						//	VGA BLANK
+		VGA_SYNC_N,						//	VGA SYNC
+		VGA_R,   						//	VGA Red[9:0]
+		VGA_G,	 						//	VGA Green[9:0]
+		VGA_B);
+	input CLOCK_50;
+	input [1:0] KEY;
+	output			VGA_CLK;   				//	VGA Clock
+	output			VGA_HS;					//	VGA H_SYNC
+	output			VGA_VS;					//	VGA V_SYNC
+	output			VGA_BLANK_N;				//	VGA BLANK
+	output			VGA_SYNC_N;				//	VGA SYNC
+	output	[9:0]	VGA_R;   				//	VGA Red[9:0]
+	output	[9:0]	VGA_G;	 				//	VGA Green[9:0]
+	output	[9:0]	VGA_B;   				//	VGA Blue[9:0]
+//	random num1 (
+//		.num(x)
+//	);
+	output [7:0] LEDR;
 	
 	
+	
+	wire [7:0] x, new_x;
+	wire [6:0] y, new_y;
+	wire enable;
+
+assign x = 8'b0000010;
+assign y = 7'b0001010;
+
+//	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(enable));
+//	
+//	bird_counter birdc1 (.clock(enable), .reset(KEY[1]), .enable(1'b1), .new_x(x));
+	 
+	draw d1(
+		.CLOCK_50(CLOCK_50),
+		.x(x),
+		.y(y), 
+		.reset(KEY[0]), 
+		.new_x(new_x), 
+		.new_y(new_y)
+	);
 	
 	vga_adapter VGA(
-			.resetn(resetn),
+			.resetn(KEY[0]),
 			.clock(CLOCK_50),
-			.colour(colour),
-			.x(x_out),
-			.y(y_out),
-			.plot(writeEn),
+			.colour(3'b111),
+			.x(new_x),
+			.y(new_y),
+			.plot(1'b1),
 			/* Signals for the DAC to drive the monitor. */
 			.VGA_R(VGA_R),
 			.VGA_G(VGA_G),
@@ -34,82 +76,40 @@ module duck_hunt();
 		
 endmodule
 
-module bird_shifter(clock, load_en, loadnumber, shift_en, s);
-  input clock, load_en;
-  input [19:0] loadnumber;
-  output s;
+module bird_counter(clock, reset, enable, new_x);
+  input clock;
+  input reset;
+  input enable;
+  output [7:0] new_x;
   
-  assign s = shifter;
   
-  reg [19:0] shifter; //Figure out length later.
+  
+  reg [7:0] counter; //Figure out length later.
+
+assign new_x = counter;
   always @(posedge clock) begin
-    if (load)
-      shifter <= loadnumber;
-    else if (shift_en)
-      shifter <= shifter >> 1;
+    if (reset)
+      counter <= 0;
+    else if (enable)
+      counter <= counter + 1'b1;
   end
 endmodule
 
-//Determines where bird should be drawn based on the bird_shifter value. (Grid based, we will figure out the grid size later).
-module bird_pos(shifter, x_out, y_out);
-	input [19:0] shifter;
-	output reg x_out, y_out;
-	
-	localparam GRID_SIZE = 20;
-	
-	always @(*) begin
-		if (shifter[19])
-			x_out <= 0*GRID_SIZE;
-		else if (shifter[18])
-			x_out <= 1*GRID_SIZE;
-		else if (shifter[17])
-			x_out <= 2*GRID_SIZE;
-		else if (shifter[16])
-			x_out <= 3*GRID_SIZE;
-		else if (shifter[15])
-			x_out <= 4*GRID_SIZE;
-		else if (shifter[14])
-			x_out <= 5*GRID_SIZE;
-		else if (shifter[13])
-			x_out <= 6*GRID_SIZE;
-		else if (shifter[12])
-			x_out <= 7*GRID_SIZE;
-		else if (shifter[11])
-			x_out <= 8*GRID_SIZE;
-		else if (shifter[10])
-			x_out <= 9*GRID_SIZE;
-		else if (shifter[9])
-			x_out <= 10*GRID_SIZE;
-		else if (shifter[8])
-			x_out <= 11*GRID_SIZE;
-		else if (shifter[7])
-			x_out <= 12*GRID_SIZE;
-		else if (shifter[6])
-			x_out <= 13*GRID_SIZE;
-		else if (shifter[5])
-			x_out <= 14*GRID_SIZE;
-		else if (shifter[4])
-			x_out <= 15*GRID_SIZE;
-		else if (shifter[3])
-			x_out <= 16*GRID_SIZE;
-		else if (shifter[2])
-			x_out <= 17*GRID_SIZE;
-		else if (shifter[1])
-			x_out <= 18*GRID_SIZE;
-		else if (shifter[0])
-			x_out <= 19*GRID_SIZE;	
-	end
-endmodule
 
 module draw(CLOCK_50, x, y, reset, new_x, new_y);
 	input CLOCK_50;
 	input [7:0] x;
 	input [6:0] y;
 	input reset;
-	output [7:0] x;
-	output [6:0] y;
+	output [7:0] new_x;
+	output [6:0] new_y;
 	
 	reg [3:0] current_state, next_state;
+	reg [7:0] temp_x;
+	reg [6:0] temp_y;
+	
+	assign new_x = temp_x;
+	assign new_y = temp_y;
 	
 	localparam  BIRD_0  = 4'b0000,//body 1
 					BIRD_1  = 4'b0001,//head
@@ -129,20 +129,20 @@ module draw(CLOCK_50, x, y, reset, new_x, new_y);
 	always@(*)
    begin
 		case (current_state)
-			BIRD_0: nest_state = BIRD_1;
-			BIRD_1: nest_state = BIRD_2;
-			BIRD_2: nest_state = BIRD_3;
-			BIRD_3: nest_state = BIRD_4;
-			BIRD_4: nest_state = BIRD_5;
-			BIRD_5: nest_state = BIRD_6;
-			BIRD_6: nest_state = BIRD_7;
-			BIRD_7: nest_state = BIRD_8;
-			BIRD_8: nest_state = BIRD_9;
-			BIRD_9: nest_state = BIRD_10;
-			BIRD_10: nest_state = BIRD_11;
-			BIRD_11: nest_state = BIRD_12;
-			BIRD_12: nest_state = END;
-			END: next_statae = reset ? BIRD_0 : END;
+			BIRD_0: next_state = BIRD_1;
+			BIRD_1: next_state = BIRD_2;
+			BIRD_2: next_state = BIRD_3;
+			BIRD_3: next_state = BIRD_4;
+			BIRD_4: next_state = BIRD_5;
+			BIRD_5: next_state = BIRD_6;
+			BIRD_6: next_state = BIRD_7;
+			BIRD_7: next_state = BIRD_8;
+			BIRD_8: next_state = BIRD_9;
+			BIRD_9: next_state = BIRD_10;
+			BIRD_10: next_state = BIRD_11;
+			BIRD_11: next_state = BIRD_12;
+			BIRD_12: next_state = END;
+			END: next_state = reset ? BIRD_0 : END;
          default:     next_state = END;
       endcase
    end
@@ -150,44 +150,44 @@ module draw(CLOCK_50, x, y, reset, new_x, new_y);
 	always @(*)
    begin // set x
 		case (current_state)
-			BIRD_0: new_x = x;
-			BIRD_1: new_x = x;
-			BIRD_2: new_x = x - 1;
-			BIRD_3: new_x = x - 2;
-			BIRD_4: new_x = x - 3;
-			BIRD_5: new_x = x - 4;
-			BIRD_6: new_x = x - 5;
-			BIRD_7: new_x = x - 3;
-			BIRD_8: new_x = x - 3;
-			BIRD_9: new_x = x - 4;
-			BIRD_10: new_x = x - 4;
-			BIRD_11: new_x = x - 5;
-			BIRD_12: new_x = x - 5;
+			BIRD_0: temp_x = x;
+			BIRD_1: temp_x = x;
+			BIRD_2: temp_x = x - 1;
+			BIRD_3: temp_x = x - 2;
+			BIRD_4: temp_x = x - 3;
+			BIRD_5: temp_x = x - 4;
+			BIRD_6: temp_x = x - 5;
+			BIRD_7: temp_x = x - 3;
+			BIRD_8: temp_x = x - 3;
+			BIRD_9: temp_x = x - 4;
+			BIRD_10: temp_x = x - 4;
+			BIRD_11: temp_x = x - 5;
+			BIRD_12: temp_x = x - 5;
       endcase
 	end
 	
 	always @(*)
    begin // set y
 		case (current_state)
-			BIRD_0: new_y = y;
-			BIRD_1: new_y = y + 1;
-			BIRD_2: new_y = y;
-			BIRD_3: new_y = y;
-			BIRD_4: new_y = y;
-			BIRD_5: new_y = y;
-			BIRD_6: new_y = y;
-			BIRD_7: new_y = y + 1;
-			BIRD_8: new_y = y - 1;
-			BIRD_9: new_y = y + 1;
-			BIRD_10: new_y = y - 1;
-			BIRD_11: new_y = y + 1;
-			BIRD_12: new_y = y - 1;
+			BIRD_0: temp_y = y;
+			BIRD_1: temp_y = y + 1;
+			BIRD_2: temp_y = y;
+			BIRD_3: temp_y = y;
+			BIRD_4: temp_y = y;
+			BIRD_5: temp_y = y;
+			BIRD_6: temp_y = y;
+			BIRD_7: temp_y = y + 1;
+			BIRD_8: temp_y = y - 1;
+			BIRD_9: temp_y = y + 2;
+			BIRD_10: temp_y = y - 2;
+			BIRD_11: temp_y = y + 3;
+			BIRD_12: temp_y = y - 3;
       endcase
 	end
    
    always @(posedge CLOCK_50)
-	begin:
-		if(reset)
+	begin
+		if (reset)
 			current_state <= BIRD_0;
       else
 			current_state <= next_state;
@@ -195,30 +195,61 @@ module draw(CLOCK_50, x, y, reset, new_x, new_y);
 	
 endmodule
 
-module random(num);// output a starting position
-	output [7:0] num;
+//module random(num);// output a starting position
+//	output [7:0] num;
+//	
+//	reg [6:0] temp;
+//	wire [3:0] layers;
+//	wire [4:0] height;
+//	
+//	assign layers = 3'b111;
+//	
+//	initial begin
+//		temp <= $random$ layers;
+//	end
+//	
+//	assign height = temp*8 + 3'b100;// 8x+4
+//	assign num = {4'b000, temp[3:0]};
+//	
+//endmodule
+
+module frame_counter(num, clock, reset, q); // output 1 if desinated fram number reached.
+	input [3:0] num;
+	input clock;
+	input reset;
+	output reg q = 0;
 	
-	reg [6:0] temp;
-	wire [3:0] layers;
-	wire [4:0] height;
+	wire count;
 	
-	assign layers = 3'b111;
+	reg [3:0] temp = 0;
 	
-	initial begin
-		temp <= $urandom$layers;
+	
+	delay_counter delay(
+		.clock(clock),
+		.reset(reset),
+		.q(count)
+	);
+	
+	always @(*)
+	begin
+		if (count == 20'b00000000000000000000)
+			temp <= temp - 1;
+		else if (temp == 0) begin
+			temp <= num;
+			q <= 1'b1;
+		end
+		else
+			q <= 1'b0;
 	end
-	
-	assign height = temp*8 + 3'b100;// 8x+4
-	assign num = {4'b000, temp[3:0]}
 	
 endmodule
 	
 module delay_counter(clock, reset, q);
 	input clock;
 	input reset;
-	output reg q;
+	output reg [19:0] q;
 	
-	always @(posedge clock, negedge reset)
+	always @(posedge clock)
 	begin
 		if (reset == 1'b0)
 			q <= 0;
@@ -230,35 +261,4 @@ module delay_counter(clock, reset, q);
 					q <= q - 1'b1;
 			end
 	end
-endmodule
-
-module frame_counter(num, clock, reset, q); // output 1 if desinated fram number reached.
-	input num;
-	input clock;
-	input reset;
-	output reg q;
-	
-	wire count;
-	reg temp;
-	
-	assign temp = num;
-	assign q = 1'b0;
-	
-	delay_counter(
-		.clock(clock),
-		.reset(reset),
-		.q(count)
-	);
-	
-	always @(*)
-	begin
-		if (count == 20'b00000000000000000000)
-			temp <= temp - 1;
-		else if (temp == 0)
-			temp <= num;
-			q <= 1'b1;
-		else
-			q <= 1'b0;
-	end
-	
 endmodule
