@@ -42,7 +42,7 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
-	bird b1(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x), .y_out(plot_y), .done(done_draw);
+	bird b1(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x), .y_out(plot_y), .done(done_draw));
 	
 	
 	/**
