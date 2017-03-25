@@ -97,8 +97,8 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 		
 endmodule
 
-module bird(clock, reset, enable, new_x_bird, new_y_bird, colour);
-	input clock, reset, enable;
+module bird(clock, reset, count_en, draw_en, new_x_bird, new_y_bird, colour);
+	input clock, reset, count_en, draw_en;
 	output [7:0] new_x_bird;
 	output [6:0] new_y_bird;
 	output reg [2:0] colour;
@@ -106,7 +106,7 @@ module bird(clock, reset, enable, new_x_bird, new_y_bird, colour);
 	bird_counter bcount(
 		.clock(clock), 
 		.reset(reset), 
-		.enable(enable), 
+		.enable(count_en), 
 		.new_x(x));
 
 	random num1(
@@ -118,10 +118,11 @@ module bird(clock, reset, enable, new_x_bird, new_y_bird, colour);
 	wire [6:0] y;
 		
 	draw_bird d1(
-		.CLOCK_50(clock),
+		.clock(clock),
 		.x(x),
 		.y(y), 
-		.reset(KEY[0]), 
+		.reset(reset), 
+		.draw_en(draw_en),
 		.new_x(new_x_bird), 
 		.new_y(new_y_bird));
 		
@@ -173,12 +174,11 @@ module bird_counter(clock, reset, enable, new_x);
 	end
 endmodule
 
-
-module draw_bird(CLOCK_50, x, y, reset, new_x, new_y, done);
-	input CLOCK_50;
+module draw_bird(clock, x, y, reset, draw_en, new_x, new_y, done);
+	input clock;
 	input [7:0] x;
 	input [6:0] y;
-	input reset;
+	input reset, draw_en;
 	output [7:0] new_x;
 	output [6:0] new_y;
 	output done;
@@ -229,42 +229,42 @@ module draw_bird(CLOCK_50, x, y, reset, new_x, new_y, done);
 	always @(*)
 	begin // set x
 		case (current_state)
-			BIRD_0: temp_x = x;
-			BIRD_1: temp_x = x;
-			BIRD_2: temp_x = x - 1;
-			BIRD_3: temp_x = x - 2;
-			BIRD_4: temp_x = x - 3;
-			BIRD_5: temp_x = x - 4;
-			BIRD_6: temp_x = x - 5;
-			BIRD_7: temp_x = x - 3;
-			BIRD_8: temp_x = x - 3;
-			BIRD_9: temp_x = x - 4;
-			BIRD_10: temp_x = x - 4;
-			BIRD_11: temp_x = x - 5;
-			BIRD_12: temp_x = x - 5;
+			BIRD_0: temp_x = draw_en ? x : -1;
+			BIRD_1: temp_x = draw_en ? x : -1;
+			BIRD_2: temp_x = draw_en ? x - 1 : -1;
+			BIRD_3: temp_x = draw_en ? x - 2 : -1;
+			BIRD_4: temp_x = draw_en ? x - 3 : -1;
+			BIRD_5: temp_x = draw_en ? x - 4 : -1; 
+			BIRD_6: temp_x = draw_en ? x - 5 : -1;
+			BIRD_7: temp_x = draw_en ? x - 3 : -1;
+			BIRD_8: temp_x = draw_en ? x - 3 : -1;
+			BIRD_9: temp_x = draw_en ? x - 4 : -1;
+			BIRD_10: temp_x = draw_en ? x - 4 : -1;
+			BIRD_11: temp_x = draw_en ? x - 5 : -1;
+			BIRD_12: temp_x = draw_en ? x - 5 : -1;
       endcase
 	end
 	
 	always @(*)
 	begin // set y
 		case (current_state)
-			BIRD_0: temp_y = y;
-			BIRD_1: temp_y = y + 1;
-			BIRD_2: temp_y = y;
-			BIRD_3: temp_y = y;
-			BIRD_4: temp_y = y;
-			BIRD_5: temp_y = y;
-			BIRD_6: temp_y = y;
-			BIRD_7: temp_y = y + 1;
-			BIRD_8: temp_y = y - 1;
-			BIRD_9: temp_y = y + 2;
-			BIRD_10: temp_y = y - 2;
-			BIRD_11: temp_y = y + 3;
-			BIRD_12: temp_y = y - 3;
+			BIRD_0: temp_y = draw_en ? y : -1;
+			BIRD_1: temp_y = draw_en ? y + 1 : -1;
+			BIRD_2: temp_y = draw_en ? y : -1;
+			BIRD_3: temp_y = draw_en ? y : -1;
+			BIRD_4: temp_y = draw_en ? y : -1;
+			BIRD_5: temp_y = draw_en ? y : -1;
+			BIRD_6: temp_y = draw_en ? y : -1;
+			BIRD_7: temp_y = draw_en ? y + 1 : -1;
+			BIRD_8: temp_y = draw_en ? y - 1 : -1;
+			BIRD_9: temp_y = draw_en ? y + 2 : -1;
+			BIRD_10: temp_y = draw_en ? y - 2 : -1;
+			BIRD_11: temp_y = draw_en ? y + 3 : -1;
+			BIRD_12: temp_y = draw_en ? y - 3 : -1;
       endcase
 	end
    
-	always @(posedge CLOCK_50)
+	always @(posedge clock)
 	begin
 		if (reset)
 			current_state <= BIRD_0;
