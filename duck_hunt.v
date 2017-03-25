@@ -38,7 +38,12 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
-
+	
+	//FSM Stuff
+	localparam	ERASE_BIRDS = 3'b000,
+				UPDATE_POSITIONS = 3'b001,
+				DRAW_BIRDS = 3'b010,
+				
 	frame_counter fram (
 		.num(4'b1111),
 		.clock(CLOCK_50),
@@ -94,7 +99,7 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 		defparam VGAhunter.MONOCHROME = "FALSE";
 		defparam VGAhunter.BITS_PER_COLOUR_CHANNEL = 1;
 		defparam VGAhunter.BACKGROUND_IMAGE = "black.mif";
-		
+	
 endmodule
 
 module bird(clock, reset, count_en, draw_en, new_x_bird, new_y_bird, colour);
@@ -103,6 +108,8 @@ module bird(clock, reset, count_en, draw_en, new_x_bird, new_y_bird, colour);
 	output [6:0] new_y_bird;
 	output reg [2:0] colour;
 	
+	wire [7:0] x_out;
+
 	bird_counter bcount(
 		.clock(clock), 
 		.reset(reset), 
