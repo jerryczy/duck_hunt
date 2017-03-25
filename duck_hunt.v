@@ -37,19 +37,16 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
+	
+	//FSM Stuff
+	localparam	ERASE_BIRDS = 3'b000,
+				UPDATE_POSITIONS = 3'b001,
+				DRAW_BIRDS = 3'b010,
+				
+				
+				
 
-	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(enable));
-
-	bird_counter birdc1 (.clock(CLOCK_50), .reset(KEY[1]), .enable(enable), .new_x(x));
-	 
-	draw d1(
-		.CLOCK_50(CLOCK_50),
-		.x(x),
-		.y(y), 
-		.reset(KEY[0]), 
-		.new_x(new_x), 
-		.new_y(new_y)
-	);
+	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(1'b1));
 	
 	vga_adapter VGA(
 			.resetn(KEY[0]),
@@ -70,15 +67,16 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 		defparam VGA.RESOLUTION = "160x120";
 		defparam VGA.MONOCHROME = "FALSE";
 		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
-		defparam VGA.BACKGROUND_IMAGE = "black.mif";
+		defparam VGA.BACKGROUND_IMAGE = "black.mif";	
 		
+	
 endmodule
 
-module bird(clock, reset, count_en, draw_en, x_out, y_out);
+module bird(clock, reset, count_en, draw_en);
 	input clock, reset, count_en, draw_en;
-	output [7:0] x_out;
-	output [6:0] y_out;
 	
+	wire [7:0] x_out;
+
 	bird_counter bcount(
 			.clock(clock), 
 			.reset(reset), 
@@ -92,8 +90,8 @@ module bird(clock, reset, count_en, draw_en, x_out, y_out);
 		.y(y_out), 
 		.reset(reset),
 		.draw_en(draw_en),
-		.new_x(new_x), 
-		.new_y(new_y)
+		.new_x(x_out), 
+		.new_y(y_out)
 	);
 			
 	//assign y_out = random number
