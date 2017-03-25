@@ -118,7 +118,7 @@ module bird(clock, reset, count_en, draw_en, x_out, y_out, done);
 	bird_counter bcount(
 		.clock(clock), 
 		.reset(reset), 
-		.enable(draw_en), 
+		.enable(count_en), 
 		.new_x(x));
 
 //	random num1(
@@ -144,7 +144,7 @@ module bird_counter(clock, reset, enable, new_x);
 	input enable;
 	output [7:0] new_x;
   
-	reg [7:0] counter = 0;
+	reg [7:0] counter = 5;
 
 	assign new_x = counter;
 	always @(posedge clock) begin
