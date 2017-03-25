@@ -7,7 +7,7 @@
 //x
 // a duck
 
-module duck_hunt(CLOCK_50, KEY, LEDR,
+module duck_hunt(CLOCK_50, KEY,
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
 		VGA_VS,							//	VGA V_SYNC
@@ -42,13 +42,13 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
-	bird b1(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x), .y_out(plot_y), .done(done_draw);
+	bird b1(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x), .y_out(plot_y), .done(done_draw));
 	
 	
 	/**
 	CONTROL
 	*/
-	localparam	HOLD = 3'b000;
+	localparam	HOLD = 3'b000,
 				ERASE_BIRDS = 3'b001, //erase old birds if necessary
 				DRAW_BIRDS = 3'b010; //draw new birds if necessary
 				
@@ -57,7 +57,7 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 		case (current_state) //when frame is reached, we must erase old birds and draw new birds.
 			HOLD: next_state = frame_reached ? ERASE_BIRDS : HOLD;
 			ERASE_BIRDS: next_state = done_draw ? DRAW_BIRDS : ERASE_BIRDS; //we need one erase_birds state for each bird
-			DRAW_BIRDS: next_state = done_draw ? UPDATE_POSITIONS : DRAW_BIRDS; //we need one draw_birds state for each bird.
+			DRAW_BIRDS: next_state = done_draw ? HOLD : DRAW_BIRDS; //we need one draw_birds state for each bird.
 			//each bird will have draw_en, and if their draw_en isn't enabled, 
 			//and if we reach one bird with draw_en disabled, then we go to next state.
 			
@@ -82,14 +82,6 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	MODULE INSTANTIATIONS
 	*/
 	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(frame_reached));
-
-	bird b1(
-		.CLOCK_50(CLOCK_50),
-		.reset(KEY[0]), 
-		.enable(enable),
-		.new_x(new_x_bird), 
-		.new_y(new_y_bird),
-		.colour(colour_b));
 	
 	vga_adapter VGA(
 		.resetn(KEY[0]),
@@ -114,10 +106,11 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	
 endmodule
 
-module bird(clock, reset, draw_en, x_out, y_out);
+module bird(clock, reset, draw_en, x_out, y_out, done);
 	input clock, reset, draw_en;
 	output [7:0] x_out;
 	output [6:0] y_out;
+	output done;
 
 	bird_counter bcount(
 		.clock(clock), 
@@ -125,10 +118,10 @@ module bird(clock, reset, draw_en, x_out, y_out);
 		.enable(draw_en), 
 		.new_x(x));
 
-	random num1(
-		.clock(clock),
-		.reset(reset),
-		.num(y)); 
+//	random num1(
+//		.clock(clock),
+	//	.reset(reset),
+		//.num(y)); 
 	
 	wire [7:0] x;
 	wire [6:0] y;
@@ -140,7 +133,8 @@ module bird(clock, reset, draw_en, x_out, y_out);
 		.reset(reset), 
 		.draw_en(draw_en),
 		.new_x(x_out), 
-		.new_y(y_out));
+		.new_y(y_out),
+		.done(done));
 endmodule
    
 module bird_counter(clock, reset, enable, new_x);
@@ -169,7 +163,6 @@ module draw_bird(clock, x, y, reset, draw_en, new_x, new_y, done);
 	output [6:0] new_y;
 	output done;
 	
-	reg [3:0] current_state, next_state;
 	reg [7:0] temp_x;
 	reg [6:0] temp_y;
 	
@@ -190,6 +183,9 @@ module draw_bird(clock, x, y, reset, draw_en, new_x, new_y, done);
 					BIRD_11 = 4'b1011,//up wing 3
 					BIRD_12 = 4'b1100,//down wing 3
 					END     = 4'b1111;
+					
+	reg [3:0] current_state = BIRD_0;
+	reg [3:0] next_state;
 	
 	always@(*)
 	begin
