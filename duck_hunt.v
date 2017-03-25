@@ -27,9 +27,10 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	output	[9:0]	VGA_G;	 				//	VGA Green[9:0]
 	output	[9:0]	VGA_B;   				//	VGA Blue[9:0]	
 	
-	wire [7:0] x, new_x;
-	wire [6:0] y, new_y;
-	wire enable;
+	wire [7:0] x, new_x_bird, new_x_hunter;
+	wire [6:0] y, new_y_bird, new_y_hunter;
+	wire enable, reset;
+	wire [2:0] colour_b, colour_h;
 
 	assign x = 8'b0000010;
 	assign y = 7'b0001010;
@@ -38,54 +39,121 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
 
-	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(enable));
+	frame_counter fram (
+		.num(4'b1111),
+		.clock(CLOCK_50),
+		.reset(KEY[1]),
+		.q(enable));
 
-	bird_counter birdc1 (.clock(CLOCK_50), .reset(KEY[1]), .enable(enable), .new_x(x));
-	 
-	draw d1(
+	bird b1(
 		.CLOCK_50(CLOCK_50),
-		.x(x),
-		.y(y), 
 		.reset(KEY[0]), 
-		.new_x(new_x), 
-		.new_y(new_y)
-	);
+		.enable(enable),
+		.new_x(new_x_bird), 
+		.new_y(new_y_bird),
+		.colour(colour_b));
 	
-	vga_adapter VGA(
-			.resetn(KEY[0]),
-			.clock(CLOCK_50),
-			.colour(3'b111),
-			.x(new_x),
-			.y(new_y),
-			.plot(1'b1),
-			/* Signals for the DAC to drive the monitor. */
-			.VGA_R(VGA_R),
-			.VGA_G(VGA_G),
-			.VGA_B(VGA_B),
-			.VGA_HS(VGA_HS),
-			.VGA_VS(VGA_VS),
-			.VGA_BLANK(VGA_BLANK_N),
-			.VGA_SYNC(VGA_SYNC_N),
-			.VGA_CLK(VGA_CLK));
-		defparam VGA.RESOLUTION = "160x120";
-		defparam VGA.MONOCHROME = "FALSE";
-		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
-		defparam VGA.BACKGROUND_IMAGE = "black.mif";
+	vga_adapter VGAbird(
+		.resetn(KEY[0]),
+		.clock(CLOCK_50),
+		.colour(colour_b),
+		.x(new_x_bird),
+		.y(new_y_bird),
+		.plot(1'b1),
+		/* Signals for the DAC to drive the monitor. */
+		.VGA_R(VGA_R),
+		.VGA_G(VGA_G),
+		.VGA_B(VGA_B),
+		.VGA_HS(VGA_HS),
+		.VGA_VS(VGA_VS),
+		.VGA_BLANK(VGA_BLANK_N),
+		.VGA_SYNC(VGA_SYNC_N),
+		.VGA_CLK(VGA_CLK));
+		defparam VGAbird.RESOLUTION = "160x120";
+		defparam VGAbird.MONOCHROME = "FALSE";
+		defparam VGAbird.BITS_PER_COLOUR_CHANNEL = 1;
+		defparam VGAbird.BACKGROUND_IMAGE = "black.mif";
+		
+	vga_adapter VGAhunter(
+		.resetn(KEY[0]),
+		.clock(CLOCK_50),
+		.colour(colour_h),
+		.x(new_x_hunter),
+		.y(new_y_hunter),
+		.plot(1'b1),
+		/* Signals for the DAC to drive the monitor. */
+		.VGA_R(VGA_R),
+		.VGA_G(VGA_G),
+		.VGA_B(VGA_B),
+		.VGA_HS(VGA_HS),
+		.VGA_VS(VGA_VS),
+		.VGA_BLANK(VGA_BLANK_N),
+		.VGA_SYNC(VGA_SYNC_N),
+		.VGA_CLK(VGA_CLK));
+		defparam VGAhunter.RESOLUTION = "160x120";
+		defparam VGAhunter.MONOCHROME = "FALSE";
+		defparam VGAhunter.BITS_PER_COLOUR_CHANNEL = 1;
+		defparam VGAhunter.BACKGROUND_IMAGE = "black.mif";
 		
 endmodule
 
-module bird(clock, reset, enable, x_out, y_out);
+module bird(clock, reset, enable, new_x_bird, new_y_bird, colour);
 	input clock, reset, enable;
-	output [7:0] x_out;
-	output [6:0] y_out;
+	output [7:0] new_x_bird;
+	output [6:0] new_y_bird;
+	output reg [2:0] colour;
 	
 	bird_counter bcount(
-			.clock(clock), 
-			.reset(reset), 
-			.enable(enable), 
-			.new_x(x_out));
-			
-	//assign y_out = random number
+		.clock(clock), 
+		.reset(reset), 
+		.enable(enable), 
+		.new_x(x));
+
+	random num1(
+		.clock(clock),
+		.reset(reset),
+		.num(y));
+	
+	wire [7:0] x;
+	wire [6:0] y;
+		
+	draw_bird d1(
+		.CLOCK_50(clock),
+		.x(x),
+		.y(y), 
+		.reset(KEY[0]), 
+		.new_x(new_x_bird), 
+		.new_y(new_y_bird));
+		
+	reg current_state, next_state;
+	
+	localparam  CURRENT  = 1'b0,
+					NEXT     = 1'b1,
+		
+	always@(*)
+	begin
+		case (current_state)
+			CURRENT: next_state = enable ? NEXT : CURRENT;
+			NEXT: next_state = CURRENT;
+      endcase
+   end
+		
+	always @(*)
+	begin
+		case (current_state)
+			CURRENT: colour = 3'b111;
+			NEXT: colour = 3'b000;
+      endcase
+	end
+   
+	always @(posedge clock)
+	begin
+		if (reset)
+			current_state <= CURRENT;
+		else
+			current_state <= next_state;
+	end
+		
 endmodule
    
 module bird_counter(clock, reset, enable, new_x);
@@ -106,7 +174,7 @@ module bird_counter(clock, reset, enable, new_x);
 endmodule
 
 
-module draw(CLOCK_50, x, y, reset, new_x, new_y, done);
+module draw_bird(CLOCK_50, x, y, reset, new_x, new_y, done);
 	input CLOCK_50;
 	input [7:0] x;
 	input [6:0] y;
@@ -208,23 +276,27 @@ module draw(CLOCK_50, x, y, reset, new_x, new_y, done);
 	
 endmodule
 
-//module random(num);// output a starting position
-//	output [7:0] num;
-//	
-//	reg [6:0] temp;
-//	wire [3:0] layers;
-//	wire [4:0] height;
-//	
-//	assign layers = 3'b111;
-//	
-//	initial begin
-//		temp <= $random$ layers;
-//	end
-//	
-//	assign height = temp*8 + 3'b100;// 8x+4
-//	assign num = {4'b000, temp[3:0]};
-//	
-//endmodule
+module random(clock, reset, num);
+	input clock;
+   input reset;
+   output reg [3:0] num;
+	
+	reg [3:0] num_next;
+
+	always @* begin
+		num_next[3] = num[3]^num[0];
+		num_next[2] = num[2]^num_next[3];
+		num_next[1] = num[1]^num_next[2];
+		num_next[0] = num[0]^num_next[1];
+	end
+
+	always @(posedge clock or negedge reset)
+		if(!reset)
+			num <= 4'b1010;
+		else
+			num <= num_next;
+
+endmodule
 
 module frame_counter(num, clock, reset, q); // output 1 if desinated fram number reached.
 	input [3:0] num;
