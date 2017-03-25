@@ -29,7 +29,7 @@ module duck_hunt(CLOCK_50, KEY,
 	
 	wire [7:0] plot_x;
 	wire [6:0] plot_y;
-	wire draw_en;
+	wire count_en, draw_en;
 	wire frame_reached;
 	wire done_draw;
 	
@@ -106,8 +106,8 @@ module duck_hunt(CLOCK_50, KEY,
 	
 endmodule
 
-module bird(clock, reset, draw_en, x_out, y_out, done);
-	input clock, reset, draw_en;
+module bird(clock, reset, count_en, draw_en, x_out, y_out, done);
+	input clock, reset, count_en, draw_en;
 	output [7:0] x_out;
 	output [6:0] y_out;
 	output done;
