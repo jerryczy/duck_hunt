@@ -111,6 +111,9 @@ module bird(clock, reset, draw_en, x_out, y_out, done);
 	output [7:0] x_out;
 	output [6:0] y_out;
 	output done;
+	
+	wire [7:0] x;
+	wire [6:0] y;
 
 	bird_counter bcount(
 		.clock(clock), 
@@ -123,9 +126,7 @@ module bird(clock, reset, draw_en, x_out, y_out, done);
 	//	.reset(reset),
 		//.num(y)); 
 	
-	wire [7:0] x;
-	wire [6:0] y;
-		
+	
 	draw_bird d1(
 		.clock(clock),
 		.x(x),
