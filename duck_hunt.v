@@ -29,24 +29,53 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	
 	wire [7:0] x, new_x;
 	wire [6:0] y, new_y;
-	wire enable;
-
-	assign x = 8'b0000010;
-	assign y = 7'b0001010;
+	wire enable, count_en, draw_en;
+	wire frame_reached;
 	
+	reg [2:0] current_state, next_state;
+
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
+	bird b1(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(new_x), .y_out(new_y));
 	
-	//FSM Stuff
-	localparam	ERASE_BIRDS = 3'b000,
-				UPDATE_POSITIONS = 3'b001,
-				DRAW_BIRDS = 3'b010,
+	
+	/**
+	CONTROL
+	*/
+	localparam	HOLD = 3'b000;
+				ERASE_BIRDS = 3'b001, //erase old birds if necessary
+				DRAW_BIRDS = 3'b010; //draw new birds if necessary
 				
-				
-				
-
-	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(1'b1));
+	//STATE TABLE
+	always@(*) 
+	begin
+		case (current_state) //when frame is reached, we must erase old birds and draw new birds.
+			HOLD: next_state = frame_reached ? ERASE_BIRDS : HOLD;
+			ERASE_BIRDS: next_state = done_draw ? DRAW_BIRDS : ERASE_BIRDS; //we need one erase_birds state for each bird
+			DRAW_BIRDS: next_state = done_draw ? UPDATE_POSITIONS : DRAW_BIRDS; //we need one draw_birds state for each bird.
+			//each bird will have draw_en, and if their draw_en isn't enabled, 
+			//and if we reach one bird with draw_en disabled, then we go to next state.
+		endcase
+	end
+		
+	always@(posedge CLOCK_50)
+	begin
+		current_state <= next_state;
+	end
+	
+	
+	
+	/**
+	DATAPATH
+	*/
+	
+	
+	
+	/**
+	MODULE INSTANTIATIONS
+	*/
+	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(frame_reached));
 	
 	vga_adapter VGA(
 			.resetn(KEY[0]),
@@ -72,15 +101,15 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	
 endmodule
 
-module bird(clock, reset, count_en, draw_en);
-	input clock, reset, count_en, draw_en;
-	
-	wire [7:0] x_out;
+module bird(clock, reset, draw_en, x_out, y_out);
+	input clock, reset, draw_en;
+	output [7:0] x_out;
+	output [6:0] y_out;
 
 	bird_counter bcount(
 			.clock(clock), 
 			.reset(reset), 
-			.enable(count_en), 
+			.enable(draw_en), 
 			.new_x(x_out)
 	);
 	
