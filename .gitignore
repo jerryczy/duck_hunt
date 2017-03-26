@@ -7,3 +7,7 @@ work/_vmake
 *.wlf
 work/_lib1_2.qpg
 work/_lib1_3.qpg
+qmegawiz_errors_log.txt
+*.cnx
+vga_pll.cnxerr
+*.qip

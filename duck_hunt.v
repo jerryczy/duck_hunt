@@ -26,36 +26,38 @@ module duck_hunt(CLOCK_50, KEY,
 	output	[9:0]	VGA_R;   				//	VGA Red[9:0]
 	output	[9:0]	VGA_G;	 				//	VGA Green[9:0]
 	output	[9:0]	VGA_B;   				//	VGA Blue[9:0]	
-	
 
 	wire [7:0] plot_x_1, plot_x_2, plot_x_3, plot_x_4, plot_x_5, plot_x_6, plot_x_h, x_out;
 	wire [6:0] plot_y_1, plot_y_2, plot_y_3, plot_y_4, plot_y_5, plot_y_6, plot_y_h, y_out;
 	wire frame_reached;
 	wire done_draw_1, done_draw_2, done_draw_3, done_draw_4, done_draw_5, done_draw_6, done_draw_h;
 	wire [2:0] colour;
-	wire [s:0] current_state;
-	wire [6:0] reset_draw, reset_counter, draw_en;
+	wire [3:0] current_state;
+	wire [5:0] reset_draw, reset_counter, draw_en;
+	wire reset_hunter;
 
-	assign [6:0] draw_en = 7'b1111111; //for now
+	assign draw_en = 6'b1111111; //for now
 
 	/*
-	INSTANTIATE MULTIPLE BIRDS.
+	INSTANTIATE MULTIPLE BIRDS AND HUNTER.
 	*/
-	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[0]), .draw_en(draw_en[0]), .x_out(plot_x_1), .y_out(plot_y_1), .done(done_draw_1));
-	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[1]), .draw_en(draw_en[1]), .x_out(plot_x_2), .y_out(plot_y_2), .done(done_draw_2));
-	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[2]), .draw_en(draw_en[2]), .x_out(plot_x_3), .y_out(plot_y_3), .done(done_draw_3));
-	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[3]), .draw_en(draw_en[3]), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
-	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[4]), .draw_en(draw_en[4]), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
-	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[5]), .draw_en(draw_en[5]), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
-	hunter h1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[6]), .draw_en(draw_en[6]), .x_out(plot_x_h), .y_out(plot_y_h), .done(done_draw_h));
-	
+	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[0]), .reset_draw(reset_draw[0]), .draw_en(draw_en[0]), .x_out(plot_x_1), .y_out(plot_y_1), .done(done_draw_1));
+	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[1]), .reset_draw(reset_draw[1]), .draw_en(draw_en[1]), .x_out(plot_x_2), .y_out(plot_y_2), .done(done_draw_2));
+	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[2]), .reset_draw(reset_draw[2]), .draw_en(draw_en[2]), .x_out(plot_x_3), .y_out(plot_y_3), .done(done_draw_3));
+	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[3]), .reset_draw(reset_draw[3]), .draw_en(draw_en[3]), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
+	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[4]), .reset_draw(reset_draw[4]), .draw_en(draw_en[4]), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
+	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[5]), .reset_draw(reset_draw[5]), .draw_en(draw_en[5]), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
+	hunter h1(.clock(CLOCK_50), .reset_hunter(reset_hunter), .x_out(plot_x_h), .y_out(plot_y_h), .done(done_draw_h));
+
 	control c1(
 		.clock(CLOCK_50),
 		.frame_reached(frame_reached),
 		.done_draw_1(done_draw_1), .done_draw_2(done_draw_2), .done_draw_3(done_draw_3), .done_draw_4(done_draw_4), .done_draw_5(done_draw_5), .done_draw_6(done_draw_6),
 		.done_draw_h(done_draw_h),
+		.reset(KEY[0]),
 		.reset_draw(reset_draw),
-		.curr(current_state);
+	 	.reset_hunter(reset_hunter),
+		.curr(current_state)
 	);
 	
 	datapath d1(
@@ -99,8 +101,10 @@ module control(
 	input clock,
 	input frame_reached,
 	input done_draw_1, done_draw_2, done_draw_3, done_draw_4, done_draw_5, done_draw_6, done_draw_h,
-	output reg [6:0] reset_draw,
-	output [3:0]curr;
+	input reset,
+	output reg [5:0] reset_draw,
+	output reg reset_hunter,
+	output [3:0] curr
 	);
 
 	localparam	HOLD = 4'b0,
@@ -117,7 +121,7 @@ module control(
 					ERASE_BIRDS_6 = 4'd11,
 					DRAW_BIRDS_6 = 4'd12,
 					ERASE_HUNTER = 4'd13,
-					DRAW_HUNTER = 4'd14;
+					DRAW_HUNTER = 4'd14,
 					RESET_DRAW = 4'd15;
 					
 	reg [3:0] current_state = HOLD;
@@ -151,8 +155,8 @@ module control(
 		
 	always@(posedge clock)
 	begin
-		if (KEY[0])
-			current_state <= END;
+		if (reset)
+			current_state <= HOLD;
 		else begin
 			if (current_state != next_state) //high for one clock cycle per draw state.
 				begin
@@ -169,12 +173,13 @@ module control(
 						DRAW_BIRDS_5: reset_draw[4] = 1;
 						ERASE_BIRDS_6: reset_draw[5] = 1;
 						DRAW_BIRDS_6: reset_draw[5] = 1;
-						ERASE_HUNTER: reset_draw[6] = 1;
-						DRAW_HUNTER: reset_draw[6] = 1;
+						ERASE_HUNTER: reset_hunter = 1;
+						DRAW_HUNTER: reset_hunter = 1;
 					endcase
 				end
 			else begin
-				reset_draw[6:0] = 0;
+				reset_draw[5:0] = 0;
+				reset_hunter = 0;
 			end
 			current_state <= next_state;
 		end
@@ -186,9 +191,9 @@ module datapath (
 	input [3:0] current_state,
 	input [7:0] plot_x_1, plot_x_2, plot_x_3, plot_x_4, plot_x_5, plot_x_6, plot_x_h,
 	input [6:0] plot_y_1, plot_y_2, plot_y_3, plot_y_4, plot_y_5, plot_y_6, plot_y_h,
-	output [2:0] colour,
-	output [7:0] x_out,
-	output [6:0] y_out
+	output reg [2:0] colour,
+	output reg [7:0] x_out,
+	output reg [6:0] y_out
 	);
 	
 	localparam	HOLD = 4'b0,
@@ -206,7 +211,6 @@ module datapath (
 					DRAW_BIRDS_6 = 4'd12,
 					ERASE_HUNTER = 4'd13,
 					DRAW_HUNTER = 4'd15;
-					RESET_DRAW = 4'd16;
 
 	always@(*) 
 	begin // set colour
@@ -273,7 +277,7 @@ endmodule
 module bird(cclock, dclock, reset_counter, reset_draw, draw_en, x_out, y_out, done);
 	//cclock = clock for bird_counter
 	//dclock = clock for draw_bird
-	input cclock, dclock, reset, draw_en;
+	input cclock, dclock, reset_counter, reset_draw, draw_en;
 	output [7:0] x_out;
 	output [6:0] y_out;
 	output done;
@@ -291,9 +295,6 @@ module bird(cclock, dclock, reset_counter, reset_draw, draw_en, x_out, y_out, do
 		.clock(dclock),
 		.reset(reset),
 		.y(y));
-		
-	wire [7:0] x;
-	wire [6:0] y;
 	
 	draw_bird d1(
 		.clock(dclock),
@@ -329,15 +330,9 @@ module draw_bird(clock, x, y, reset, draw_en, new_x, new_y, done);
 	input [7:0] x;
 	input [6:0] y;
 	input reset, draw_en;
-	output [7:0] new_x;
-	output [6:0] new_y;
+	output reg [7:0] new_x;
+	output reg [6:0] new_y;
 	output done;
-	
-	reg [7:0] temp_x;
-	reg [6:0] temp_y;
-	
-	assign new_x = temp_x;
-	assign new_y = temp_y;
 	
 	localparam  BIRD_0  = 4'b0000,//body 1
 					BIRD_1  = 4'b0001,//head
@@ -381,38 +376,38 @@ module draw_bird(clock, x, y, reset, draw_en, new_x, new_y, done);
 	always @(*)
 	begin // set x
 		case (current_state)
-			BIRD_0: temp_x = draw_en ? x : -1;
-			BIRD_1: temp_x = draw_en ? x : -1;
-			BIRD_2: temp_x = draw_en ? x - 1 : -1;
-			BIRD_3: temp_x = draw_en ? x - 2 : -1;
-			BIRD_4: temp_x = draw_en ? x - 3 : -1;
-			BIRD_5: temp_x = draw_en ? x - 4 : -1; 
-			BIRD_6: temp_x = draw_en ? x - 5 : -1;
-			BIRD_7: temp_x = draw_en ? x - 3 : -1;
-			BIRD_8: temp_x = draw_en ? x - 3 : -1;
-			BIRD_9: temp_x = draw_en ? x - 4 : -1;
-			BIRD_10: temp_x = draw_en ? x - 4 : -1;
-			BIRD_11: temp_x = draw_en ? x - 5 : -1;
-			BIRD_12: temp_x = draw_en ? x - 5 : -1;
+			BIRD_0: new_x = draw_en ? x : -1;
+			BIRD_1: new_x = draw_en ? x : -1;
+			BIRD_2: new_x = draw_en ? x - 1 : -1;
+			BIRD_3: new_x = draw_en ? x - 2 : -1;
+			BIRD_4: new_x = draw_en ? x - 3 : -1;
+			BIRD_5: new_x = draw_en ? x - 4 : -1; 
+			BIRD_6: new_x = draw_en ? x - 5 : -1;
+			BIRD_7: new_x = draw_en ? x - 3 : -1;
+			BIRD_8: new_x = draw_en ? x - 3 : -1;
+			BIRD_9: new_x = draw_en ? x - 4 : -1;
+			BIRD_10: new_x = draw_en ? x - 4 : -1;
+			BIRD_11: new_x = draw_en ? x - 5 : -1;
+			BIRD_12: new_x = draw_en ? x - 5 : -1;
       endcase
 	end
 	
 	always @(*)
 	begin // set y
 		case (current_state)
-			BIRD_0: temp_y = draw_en ? y : -1;
-			BIRD_1: temp_y = draw_en ? y + 1 : -1;
-			BIRD_2: temp_y = draw_en ? y : -1;
-			BIRD_3: temp_y = draw_en ? y : -1;
-			BIRD_4: temp_y = draw_en ? y : -1;
-			BIRD_5: temp_y = draw_en ? y : -1;
-			BIRD_6: temp_y = draw_en ? y : -1;
-			BIRD_7: temp_y = draw_en ? y + 1 : -1;
-			BIRD_8: temp_y = draw_en ? y - 1 : -1;
-			BIRD_9: temp_y = draw_en ? y + 2 : -1;
-			BIRD_10: temp_y = draw_en ? y - 2 : -1;
-			BIRD_11: temp_y = draw_en ? y + 3 : -1;
-			BIRD_12: temp_y = draw_en ? y - 3 : -1;
+			BIRD_0: new_y = draw_en ? y : -1;
+			BIRD_1: new_y = draw_en ? y + 1 : -1;
+			BIRD_2: new_y = draw_en ? y : -1;
+			BIRD_3: new_y = draw_en ? y : -1;
+			BIRD_4: new_y = draw_en ? y : -1;
+			BIRD_5: new_y = draw_en ? y : -1;
+			BIRD_6: new_y = draw_en ? y : -1;
+			BIRD_7: new_y = draw_en ? y + 1 : -1;
+			BIRD_8: new_y = draw_en ? y - 1 : -1;
+			BIRD_9: new_y = draw_en ? y + 2 : -1;
+			BIRD_10: new_y = draw_en ? y - 2 : -1;
+			BIRD_11: new_y = draw_en ? y + 3 : -1;
+			BIRD_12: new_y = draw_en ? y - 3 : -1;
       endcase
 	end
    
@@ -424,17 +419,24 @@ module draw_bird(clock, x, y, reset, draw_en, new_x, new_y, done);
 			current_state <= next_state;
 	end
    
-	assign done = (current_state == END) ? 1 : 0;
+	assign done = (current_state == END || ~draw_en) ? 1 : 0;
 endmodule
 
-module draw_hunter(clock, x, y, new_x, new_y, done);
+module hunter(clock, x, y, reset_hunter, x_out, y_out, done);
 	input clock;
 	input [7:0] x;
 	input [6:0] y;
+	input reset_hunter;
 	
-	output [7:0] new_x;
-	output [6:0] new_y;
+	output [7:0] x_out = temp_x;
+	output [6:0] y_out = temp_y;
 	output done;
+	
+	reg [7:0] temp_x;
+	reg [6:0] temp_y;
+	
+	reg [3:0] current_state = END;
+	reg [3:0] next_state;
 	
 	/*
 	 xx
@@ -448,10 +450,73 @@ module draw_hunter(clock, x, y, new_x, new_y, done);
 				DRAW_4 = 4'b0100,
 				DRAW_5 = 4'b0101,
 				DRAW_6 = 4'b0110,
-				DRAW_7 = 4'b0111;
-				DRAW_8 = 4'b1000;
-				DRAW_9 = 4'b1001;
-		
+				DRAW_7 = 4'b0111,
+				DRAW_8 = 4'b1000,
+				DRAW_9 = 4'b1001,
+				END = 4'b1010;
+				
+	always @(*)
+	begin
+		case (current_state)
+			DRAW_0: next_state = DRAW_1;
+			DRAW_1: next_state = DRAW_2;
+			DRAW_2: next_state = DRAW_2;
+			DRAW_3: next_state = DRAW_2;
+			DRAW_4: next_state = DRAW_2;
+			DRAW_5: next_state = DRAW_2;
+			DRAW_6: next_state = DRAW_2;
+			DRAW_7: next_state = DRAW_2;
+			DRAW_8: next_state = DRAW_2;
+			DRAW_9: next_state = END;
+			END: next_state = (reset_hunter) ? DRAW_0 : END;
+		endcase
+	end
+	
+	//Set x.
+	always @(*)
+	begin
+		case (current_state)
+			DRAW_0: temp_x = x + 1;
+			DRAW_1: temp_x = x + 2;
+			DRAW_2: temp_x = x;
+			DRAW_3: temp_x = x + 1;
+			DRAW_4: temp_x = x + 2;
+			DRAW_5: temp_x = x + 3;
+			DRAW_6: temp_x = x;
+			DRAW_7: temp_x = x + 1;
+			DRAW_8: temp_x = x + 2;
+			DRAW_9: temp_x = x + 3;
+			default: temp_x = 0;
+		endcase
+	end
+	
+	//Set y
+	always @(*)
+	begin
+		case (current_state)
+			DRAW_0: temp_y = y;
+			DRAW_1: temp_y = y;
+			DRAW_2: temp_y = y + 1;
+			DRAW_3: temp_y = y + 1;
+			DRAW_4: temp_y = y + 1;
+			DRAW_5: temp_y = y + 1;
+			DRAW_6: temp_y = y + 2;
+			DRAW_7: temp_y = y + 2;
+			DRAW_8: temp_y = y + 2;
+			DRAW_9: temp_y = y + 2;
+			default: temp_y = 0;
+		endcase
+	end
+	
+	always @(posedge clock)
+	begin
+		if (reset_hunter)
+			current_state <= DRAW_0;
+		else
+			current_state <= next_state;
+	end
+	
+	assign done = (current_state == END) ? 1 : 0;	
 endmodule
 
 module random(clock, reset, y);
@@ -461,19 +526,22 @@ module random(clock, reset, y);
 	
 	reg [2:0] num, num_next;
 	
-	assign y = num * 4'b1000 + 3'b100
+	assign y = num * 4'b1000 + 3'b100;
 
-	always @* begin
-		num_next[2] = num[2]^num[0];
-		num_next[1] = num[1]^num_next[2];
-		num_next[0] = num[0]^num_next[1];
+	always @(*) 
+	begin
+		num_next[2] = num[2] ^ num[0];
+		num_next[1] = num[1] ^ num_next[2];
+		num_next[0] = num[0] ^ num_next[1];
 	end
 
 	always @(posedge clock or negedge reset)
+	begin
 		if(!reset)
 			num <= 4'b0110;
-		else if ()
+		else
 			num <= num_next;
+	end
 endmodule
 
 module frame_counter(num, clock, reset, q); // output 1 if desinated fram number reached.
