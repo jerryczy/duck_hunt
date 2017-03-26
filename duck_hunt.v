@@ -7,7 +7,7 @@
 //x
 // a duck
 
-module duck_hunt(CLOCK_50, KEY,
+module duck_hunt(CLOCK_50, KEY, SW
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
 		VGA_VS,							//	VGA V_SYNC
@@ -18,6 +18,7 @@ module duck_hunt(CLOCK_50, KEY,
 		VGA_B);
 	input CLOCK_50;
 	input [1:0] KEY;
+	input [9:7] SW;
 	output			VGA_CLK;   				//	VGA Clock
 	output			VGA_HS;					//	VGA H_SYNC
 	output			VGA_VS;					//	VGA V_SYNC
@@ -27,57 +28,168 @@ module duck_hunt(CLOCK_50, KEY,
 	output	[9:0]	VGA_G;	 				//	VGA Green[9:0]
 	output	[9:0]	VGA_B;   				//	VGA Blue[9:0]	
 	
-	wire [7:0] plot_x;
-	wire [6:0] plot_y;
+	wire [7:0] plot_x_1, plot_x_2, plot_x_3, plot_x_4, plot_x_5, plot_x_6, plot_x_h, x_out;
+	wire [6:0] plot_y_1, plot_y_2, plot_y_3, plot_y_4, plot_y_5, plot_y_6, plot_y_h, y_out;
 	wire draw_en;
 	wire frame_reached;
-	wire done_draw;
-	
-	
-	wire enable, reset;
-	wire [2:0] colour_b, colour_h;
-
+	wire done_draw_1, done_draw_2, done_draw_3, done_draw_4, done_draw_5, done_draw_h;
+	wire bird_finish;
+	wire [1:0] num;	
+	wire [2:0] colour;
 	reg [2:0] current_state, next_state;
+	
+	assign [2:0] num = [9:7] SW;
 
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
-	bird b1(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x), .y_out(plot_y), .done(done_draw));
-	
+	bird b1(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_1), .y_out(plot_y_1), .done(done_draw_1));
+	bird b2(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_2), .y_out(plot_y_2), .done(done_draw_2));
+	bird b3(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_3), .y_out(plot_y_3), .done(done_draw_3));
+	bird b4(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
+	bird b5(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
+	bird b6(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
+	bird b7(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_7), .y_out(plot_y_7), .done(done_draw_7));
 	
 	/**
-	CONTROL
+	CONTROL BIRD
 	*/
-	localparam	HOLD = 3'b000,
-				ERASE_BIRDS = 3'b001, //erase old birds if necessary
-				DRAW_BIRDS = 3'b010; //draw new birds if necessary
+	localparam	HOLD = 4'b0,
+					ERASE_BIRDS_1 = 4'b1,
+					DRAW_BIRDS_1 = 4'b2,
+					ERASE_BIRDS_2 = 4'b3,
+					DRAW_BIRDS_2 = 4'b4,
+					ERASE_BIRDS_3 = 4'b5,
+					DRAW_BIRDS_3 = 4'b6,
+					ERASE_BIRDS_4 = 4'b7,
+					DRAW_BIRDS_4 = 4'b8,
+					ERASE_BIRDS_5 = 4'b9,
+					DRAW_BIRDS_5 = 4'b10,
+					ERASE_BIRDS_6 = 4'b11,
+					DRAW_BIRDS_6 = 4'b12,
+					ERASE_HUNTER = 4'b13,
+					DRAW_HUNTER = 4'b15;
 				
 	always@(*) 
 	begin
 		case (current_state) //when frame is reached, we must erase old birds and draw new birds.
-			HOLD: next_state = frame_reached ? ERASE_BIRDS : HOLD;
-			ERASE_BIRDS: next_state = done_draw ? DRAW_BIRDS : ERASE_BIRDS; //we need one erase_birds state for each bird
-			DRAW_BIRDS: next_state = done_draw ? HOLD : DRAW_BIRDS; //we need one draw_birds state for each bird.
+			HOLD: next_state = (posedge CLOCK_50) ? ERASE_BIRDS : HOLD;
+			ERASE_BIRDS_1: next_state = done_draw_1 ? DRAW_BIRDS_1 : ERASE_BIRDS_1;
+			DRAW_BIRDS_1: next_state = done_draw_1 ? ERASE_BIRDS_1 : DRAW_BIRDS_1;
+			ERASE_BIRDS_2: next_state = done_draw_2 ? DRAW_BIRDS_2 : ERASE_BIRDS_2;
+			DRAW_BIRDS_2: next_state = done_draw_2 ? ERASE_BIRDS_2 : DRAW_BIRDS_2;
+			ERASE_BIRDS_3: next_state = done_draw_3 ? DRAW_BIRDS_3 : ERASE_BIRDS_3;
+			DRAW_BIRDS_3: next_state = done_draw_3 ? ERASE_BIRDS_3 : DRAW_BIRDS_3;
+			ERASE_BIRDS_4: next_state = done_draw_4 ? DRAW_BIRDS_4 : ERASE_BIRDS_4;
+			DRAW_BIRDS_4: next_state = done_draw_4 ? ERASE_BIRDS_4 : DRAW_BIRDS_4;
+			ERASE_BIRDS_5: next_state = done_draw_5 ? DRAW_BIRDS_5 : ERASE_BIRDS_5;
+			DRAW_BIRDS_5: next_state = done_draw_5 ? ERASE_BIRDS_5 : DRAW_BIRDS_5;
+			ERASE_BIRDS_6: next_state = done_draw_6 ? DRAW_BIRDS_6 : ERASE_BIRDS_6;
+			DRAW_BIRDS_6: next_state = done_draw_6 ? ERASE_HUNTER : DRAW_BIRDS_6;
+			ERASE_HUNTER: next_state = done_draw_h ? DRAW_HUNTER : ERASE_HUNTER;
+			DRAW_HUNTER: next_state = done_draw_h ? HOLD : DRAW_HUNTER;
 			//each bird will have draw_en, and if their draw_en isn't enabled, 
 			//and if we reach one bird with draw_en disabled, then we go to next state.
-			
-			//drawing hunter states also here.
 		endcase
 	end
 		
 	always@(posedge CLOCK_50)
 	begin
-		current_state <= next_state;
+		if (KEY[0])
+			current_state <= DRAW_BIRDS_1;
+		else
+			current_state <= next_state;
 	end
 	
-	
-	
 	/**
-	DATAPATH
+	*DATAPATH
+	*num indicate the number of birds appears on the screen
 	*/
+	always@(*) 
+	begin // set colour
+		case (current_state)
+			ERASE_BIRDS_1: colour = 3'b000;
+			DRAW_BIRDS_1: colour = 3'b111;
+			ERASE_BIRDS_2: erase = 1'b1;
+			DRAW_BIRDS_2: begin
+				if (num < 4'b3)
+					colour = 3'b000;
+				else
+					colour = 3'b111;
+			end
+			ERASE_BIRDS_3: colour = 3'b000;
+			DRAW_BIRDS_3: begin
+				if (num < 4'b4)
+					colour = 3'b000;
+				else
+					colour = 3'b111;
+			end
+			ERASE_BIRDS_4: colour = 3'b000;
+			DRAW_BIRDS_4: begin
+				if (num < 4'b5)
+					colour = 3'b000;
+				else
+					colour = 3'b111;
+			end
+			ERASE_BIRDS_5: colour = 3'b000;
+			DRAW_BIRDS_5: begin
+				if (num < 4'b6)
+					colour = 3'b000;
+				else
+					colour = 3'b111;
+			end
+			ERASE_BIRDS_6: colour = 3'b000;
+			DRAW_BIRDS_6: begin
+				if (num < 4'b7)
+					colour = 3'b000;
+				else
+					colour = 3'b111;
+			end
+			ERASE_HUNTER: colour = 3'b000;
+			DRAW_HUNTER: colour = 3'b001;
+		endcase
+	end
 	
+	always@(*) 
+	begin // set position x
+		case (current_state)
+			ERASE_BIRDS_1: x_out = plot_x_1;
+			DRAW_BIRDS_1: x_out = plot_x_1;
+			ERASE_BIRDS_2: x_out = plot_x_2;
+			DRAW_BIRDS_2: x_out = plot_x_2;
+			ERASE_BIRDS_3: x_out = plot_x_3;
+			DRAW_BIRDS_3: x_out = plot_x_3;
+			ERASE_BIRDS_4: x_out = plot_x_4;
+			DRAW_BIRDS_4: x_out = plot_x_4;
+			ERASE_BIRDS_5: x_out = plot_x_5;
+			DRAW_BIRDS_5: x_out = plot_x_5;
+			ERASE_BIRDS_6: x_out = plot_x_6;
+			DRAW_BIRDS_6: x_out = plot_x_6;
+			ERASE_HUNTER: x_out = plot_x_h;
+			DRAW_HUNTER: x_out = plot_x_h;
+		endcase
+	end
 	
-	
+	always@(*) 
+	begin // set position y
+		case (current_state)
+			ERASE_BIRDS_1: y_out = plot_y_1;
+			DRAW_BIRDS_1: y_out = plot_y_1;
+			ERASE_BIRDS_2: y_out = plot_y_2;
+			DRAW_BIRDS_2: y_out = plot_y_2;
+			ERASE_BIRDS_3: y_out = plot_y_3;
+			DRAW_BIRDS_3: y_out = plot_y_3;
+			ERASE_BIRDS_4: y_out = plot_y_4;
+			DRAW_BIRDS_4: y_out = plot_y_4;
+			ERASE_BIRDS_5: y_out = plot_y_5;
+			DRAW_BIRDS_5: y_out = plot_y_5;
+			ERASE_BIRDS_6: y_out = plot_y_6;
+			DRAW_BIRDS_6: y_out = plot_y_6;
+			ERASE_HUNTER: y_out = plot_y_h;
+			DRAW_HUNTER: y_out = plot_y_h;
+		endcase
+	end
+
 	/**
 	MODULE INSTANTIATIONS
 	*/
@@ -86,9 +198,9 @@ module duck_hunt(CLOCK_50, KEY,
 	vga_adapter VGA(
 		.resetn(KEY[0]),
 		.clock(CLOCK_50),
-		.colour(colour_b),
-		.x(new_x_bird),
-		.y(new_y_bird),
+		.colour(colour),
+		.x(x_out),
+		.y(y_out),
 		.plot(1'b1),
 		/* Signals for the DAC to drive the monitor. */
 		.VGA_R(VGA_R),
@@ -99,15 +211,17 @@ module duck_hunt(CLOCK_50, KEY,
 		.VGA_BLANK(VGA_BLANK_N),
 		.VGA_SYNC(VGA_SYNC_N),
 		.VGA_CLK(VGA_CLK));
-		defparam VGAbird.RESOLUTION = "160x120";
-		defparam VGAbird.MONOCHROME = "FALSE";
-		defparam VGAbird.BITS_PER_COLOUR_CHANNEL = 1;
-		defparam VGAbird.BACKGROUND_IMAGE = "black.mif";
+		defparam VGA.RESOLUTION = "160x120";
+		defparam VGA.MONOCHROME = "FALSE";
+		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
+		defparam VGA.BACKGROUND_IMAGE = "black.mif";
 	
 endmodule
 
-module bird(clock, reset, draw_en, x_out, y_out, done);
-	input clock, reset, draw_en;
+module bird(clock, num, reset, draw_en, x_out, y_out, done);
+	input clock;
+	input [1:0] num;
+	input reset, draw_en;
 	output [7:0] x_out;
 	output [6:0] y_out;
 	output done;
@@ -117,12 +231,12 @@ module bird(clock, reset, draw_en, x_out, y_out, done);
 		.reset(reset), 
 		.enable(draw_en), 
 		.new_x(x));
-
-//	random num1(
-//		.clock(clock),
-	//	.reset(reset),
-		//.num(y)); 
 	
+	random num1(
+		.clock(clock),
+		.reset(reset),
+		.y(y));
+		
 	wire [7:0] x;
 	wire [6:0] y;
 		
@@ -135,6 +249,7 @@ module bird(clock, reset, draw_en, x_out, y_out, done);
 		.new_x(x_out), 
 		.new_y(y_out),
 		.done(done));
+		
 endmodule
    
 module bird_counter(clock, reset, enable, new_x);
@@ -143,7 +258,7 @@ module bird_counter(clock, reset, enable, new_x);
 	input enable;
 	output [7:0] new_x;
   
-	reg [7:0] counter = 0;
+	reg [7:0] counter = 5;
 
 	assign new_x = counter;
 	always @(posedge clock) begin
@@ -258,24 +373,25 @@ module draw_bird(clock, x, y, reset, draw_en, new_x, new_y, done);
 	
 endmodule
 
-module random(clock, reset, num);
+module random(clock, reset, y);
 	input clock;
    input reset;
-   output reg [3:0] num;
+   output [6:0] y;
 	
-	reg [3:0] num_next;
+	reg [2:0] num, num_next;
+	
+	assign y = num * 4'b1000 + 3'b100
 
 	always @* begin
-		num_next[3] = num[3]^num[0];
-		num_next[2] = num[2]^num_next[3];
+		num_next[2] = num[2]^num[0];
 		num_next[1] = num[1]^num_next[2];
 		num_next[0] = num[0]^num_next[1];
 	end
 
 	always @(posedge clock or negedge reset)
 		if(!reset)
-			num <= 4'b1010;
-		else
+			num <= 4'b0110;
+		else if ()
 			num <= num_next;
 endmodule
 
