@@ -37,8 +37,9 @@ module duck_hunt(CLOCK_50, KEY, SW
 	wire bird_finish;
 	wire [1:0] num;	
 	wire [2:0] colour;
-	reg [2:0] current_state, next_state;
-	wire reset_draw, reset_counter;
+	reg [4:0] current_state = HOLD;
+	reg [4:0] next_state;
+	wire [6:0] reset_draw, reset_counter;
 	
 	assign [2:0] num = [9:7] SW;
 	assign draw_en = 1'b1;
@@ -46,13 +47,13 @@ module duck_hunt(CLOCK_50, KEY, SW
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
-	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_1), .y_out(plot_y_1), .done(done_draw_1));
-	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_2), .y_out(plot_y_2), .done(done_draw_2));
-	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_3), .y_out(plot_y_3), .done(done_draw_3));
-	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
-	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
-	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
-	bird b7(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_7), .y_out(plot_y_7), .done(done_draw_7));
+	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[0]), .draw_en(draw_en), .x_out(plot_x_1), .y_out(plot_y_1), .done(done_draw_1));
+	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[1]), .draw_en(draw_en), .x_out(plot_x_2), .y_out(plot_y_2), .done(done_draw_2));
+	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[2]), .draw_en(draw_en), .x_out(plot_x_3), .y_out(plot_y_3), .done(done_draw_3));
+	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[3]), .draw_en(draw_en), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
+	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[4]), .draw_en(draw_en), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
+	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[5]), .draw_en(draw_en), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
+	bird b7(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[6]), .draw_en(draw_en), .x_out(plot_x_7), .y_out(plot_y_7), .done(done_draw_7));
 	
 	/**
 	CONTROL BIRD
@@ -72,11 +73,12 @@ module duck_hunt(CLOCK_50, KEY, SW
 					DRAW_BIRDS_6 = 4'd12,
 					ERASE_HUNTER = 4'd13,
 					DRAW_HUNTER = 4'd15;
+					RESET_DRAW = 4'd16;
 				
 	always@(*) 
 	begin
 		case (current_state) //when frame is reached, we must erase old birds and draw new birds.
-			HOLD: next_state = (frame_reached) ? RESET_1 : HOLD;
+			HOLD: next_state = (frame_reached) ? ERASE_BIRDS_1 : HOLD;
 			ERASE_BIRDS_1: next_state = done_draw_1 ? DRAW_BIRDS_1 : ERASE_BIRDS_1;
 			DRAW_BIRDS_1: next_state = done_draw_1 ? ERASE_BIRDS_1 : DRAW_BIRDS_1;
 			ERASE_BIRDS_2: next_state = done_draw_2 ? DRAW_BIRDS_2 : ERASE_BIRDS_2;
@@ -91,6 +93,7 @@ module duck_hunt(CLOCK_50, KEY, SW
 			DRAW_BIRDS_6: next_state = done_draw_6 ? ERASE_HUNTER : DRAW_BIRDS_6;
 			ERASE_HUNTER: next_state = done_draw_h ? DRAW_HUNTER : ERASE_HUNTER;
 			DRAW_HUNTER: next_state = done_draw_h ? HOLD : DRAW_HUNTER;
+			default: next_state = HOLD;
 			//each bird will have draw_en, and if their draw_en isn't enabled, 
 			//and if we reach one bird with draw_en disabled, then we go to next state.
 		endcase
@@ -100,8 +103,34 @@ module duck_hunt(CLOCK_50, KEY, SW
 	begin
 		if (KEY[0])
 			current_state <= END;
-		else
+		else begin
+			if (current_state != next_state) //high for one clock cycle per draw state.
+				begin
+					case (next_state)
+						ERASE_BIRDS_1: reset_draw[0] = 1;
+						DRAW_BIRDS_1: reset_draw[0] = 1;
+						ERASE_BIRDS_2: reset_draw[1] = 1;
+						DRAW_BIRDS_2: reset_draw[1] = 1;
+						ERASE_BIRDS_3: reset_draw[2] = 1;
+						DRAW_BIRDS_3: reset_draw[2] = 1;
+						ERASE_BIRDS_4: reset_draw[3] = 1;
+						DRAW_BIRDS_4: reset_draw[3] = 1;
+						ERASE_BIRDS_5: reset_draw[4] = 1;
+						DRAW_BIRDS_5: reset_draw[4] = 1;
+						ERASE_BIRDS_6: reset_draw[5] = 1;
+						DRAW_BIRDS_6: reset_draw[5] = 1;
+						ERASE_BIRDS_7: reset_draw[6] = 1;
+						DRAW_BIRDS_7: reset_draw[6] = 1;
+						ERASE_HUNTER: reset_hunter = 1;
+						DRAW_HUNTER: reset_hunter = 1;
+					endcase
+				end
+			else begin
+				reset_draw[7:0] = 0;
+				reset_hunter = 0;
+			end
 			current_state <= next_state;
+		end
 	end
 	
 	/**
