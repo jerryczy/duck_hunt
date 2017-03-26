@@ -7,7 +7,7 @@
 //x
 // a duck
 
-module duck_hunt(CLOCK_50, KEY, SW
+module duck_hunt(CLOCK_50, KEY,
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
 		VGA_VS,							//	VGA V_SYNC
@@ -18,7 +18,6 @@ module duck_hunt(CLOCK_50, KEY, SW
 		VGA_B);
 	input CLOCK_50;
 	input [1:0] KEY;
-	input [9:7] SW;
 	output			VGA_CLK;   				//	VGA Clock
 	output			VGA_HS;					//	VGA H_SYNC
 	output			VGA_VS;					//	VGA V_SYNC
@@ -31,18 +30,13 @@ module duck_hunt(CLOCK_50, KEY, SW
 
 	wire [7:0] plot_x_1, plot_x_2, plot_x_3, plot_x_4, plot_x_5, plot_x_6, plot_x_h, x_out;
 	wire [6:0] plot_y_1, plot_y_2, plot_y_3, plot_y_4, plot_y_5, plot_y_6, plot_y_h, y_out;
-	wire draw_en;
 	wire frame_reached;
-	wire done_draw_1, done_draw_2, done_draw_3, done_draw_4, done_draw_5, done_draw_h;
-	wire bird_finish;
-	wire [1:0] num;	
+	wire done_draw_1, done_draw_2, done_draw_3, done_draw_4, done_draw_5, done_draw_6, done_draw_h;
 	wire [2:0] colour;
-	reg [4:0] current_state = HOLD;
-	reg [4:0] next_state;
+	wire [s:0] current_state;
 	wire [6:0] reset_draw, reset_counter, draw_en;
-	
-	assign [2:0] num = [9:7] SW;
-	assign [7:0] draw_en = 1'b1; //for now
+
+	assign [6:0] draw_en = 7'b1111111; //for now
 
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
@@ -53,11 +47,62 @@ module duck_hunt(CLOCK_50, KEY, SW
 	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[3]), .draw_en(draw_en[3]), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
 	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[4]), .draw_en(draw_en[4]), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
 	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[5]), .draw_en(draw_en[5]), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
-	bird b7(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[6]), .draw_en(draw_en[6]), .x_out(plot_x_7), .y_out(plot_y_7), .done(done_draw_7));
+	hunter h1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_draw(reset_draw[6]), .draw_en(draw_en[6]), .x_out(plot_x_h), .y_out(plot_y_h), .done(done_draw_h));
+	
+	control c1(
+		.clock(CLOCK_50),
+		.frame_reached(frame_reached),
+		.done_draw_1(done_draw_1), .done_draw_2(done_draw_2), .done_draw_3(done_draw_3), .done_draw_4(done_draw_4), .done_draw_5(done_draw_5), .done_draw_6(done_draw_6),
+		.done_draw_h(done_draw_h),
+		.reset_draw(reset_draw),
+		.curr(current_state);
+	);
+	
+	datapath d1(
+		.current_state(current_state),
+		.plot_x_1(plot_x_1), .plot_x_2(plot_x_2), .plot_x_3(plot_x_3), .plot_x_4(plot_x_4), .plot_x_5(plot_x_5), .plot_x_6(plot_x_6), .plot_x_h(plot_x_h),
+		.plot_y_1(plot_y_1), .plot_y_2(plot_y_2), .plot_y_3(plot_y_3), .plot_y_4(plot_y_4), .plot_y_5(plot_y_5), .plot_y_6(plot_y_6), .plot_y_h(plot_y_h),
+		.colour(colour),
+		.x_out(x_out),
+		.y_out(y_out)
+		);
 	
 	/**
-	CONTROL BIRD
+	MODULE INSTANTIATIONS
 	*/
+	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(frame_reached));
+	
+	vga_adapter VGA(
+		.resetn(KEY[0]),
+		.clock(CLOCK_50),
+		.colour(colour),
+		.x(x_out),
+		.y(y_out),
+		.plot(1'b1),
+		/* Signals for the DAC to drive the monitor. */
+		.VGA_R(VGA_R),
+		.VGA_G(VGA_G),
+		.VGA_B(VGA_B),
+		.VGA_HS(VGA_HS),
+		.VGA_VS(VGA_VS),
+		.VGA_BLANK(VGA_BLANK_N),
+		.VGA_SYNC(VGA_SYNC_N),
+		.VGA_CLK(VGA_CLK));
+		defparam VGA.RESOLUTION = "160x120";
+		defparam VGA.MONOCHROME = "FALSE";
+		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
+		defparam VGA.BACKGROUND_IMAGE = "black.mif";
+	
+endmodule
+
+module control(
+	input clock,
+	input frame_reached,
+	input done_draw_1, done_draw_2, done_draw_3, done_draw_4, done_draw_5, done_draw_6, done_draw_h,
+	output reg [6:0] reset_draw,
+	output [3:0]curr;
+	);
+
 	localparam	HOLD = 4'b0,
 					ERASE_BIRDS_1 = 4'd1,
 					DRAW_BIRDS_1 = 4'd2,
@@ -72,8 +117,13 @@ module duck_hunt(CLOCK_50, KEY, SW
 					ERASE_BIRDS_6 = 4'd11,
 					DRAW_BIRDS_6 = 4'd12,
 					ERASE_HUNTER = 4'd13,
-					DRAW_HUNTER = 4'd15;
-					RESET_DRAW = 4'd16;
+					DRAW_HUNTER = 4'd14;
+					RESET_DRAW = 4'd15;
+					
+	reg [3:0] current_state = HOLD;
+	reg [3:0] next_state;
+	
+	assign curr = current_state;
 				
 	always@(*) 
 	begin
@@ -99,7 +149,7 @@ module duck_hunt(CLOCK_50, KEY, SW
 		endcase
 	end
 		
-	always@(posedge CLOCK_50)
+	always@(posedge clock)
 	begin
 		if (KEY[0])
 			current_state <= END;
@@ -119,24 +169,45 @@ module duck_hunt(CLOCK_50, KEY, SW
 						DRAW_BIRDS_5: reset_draw[4] = 1;
 						ERASE_BIRDS_6: reset_draw[5] = 1;
 						DRAW_BIRDS_6: reset_draw[5] = 1;
-						ERASE_BIRDS_7: reset_draw[6] = 1;
-						DRAW_BIRDS_7: reset_draw[6] = 1;
-						ERASE_HUNTER: reset_hunter = 1;
-						DRAW_HUNTER: reset_hunter = 1;
+						ERASE_HUNTER: reset_draw[6] = 1;
+						DRAW_HUNTER: reset_draw[6] = 1;
 					endcase
 				end
 			else begin
-				reset_draw[7:0] = 0;
-				reset_hunter = 0;
+				reset_draw[6:0] = 0;
 			end
 			current_state <= next_state;
 		end
 	end
+
+endmodule
+
+module datapath (
+	input [3:0] current_state,
+	input [7:0] plot_x_1, plot_x_2, plot_x_3, plot_x_4, plot_x_5, plot_x_6, plot_x_h,
+	input [6:0] plot_y_1, plot_y_2, plot_y_3, plot_y_4, plot_y_5, plot_y_6, plot_y_h,
+	output [2:0] colour,
+	output [7:0] x_out,
+	output [6:0] y_out
+	);
 	
-	/**
-	*DATAPATH
-	*num indicate the number of birds appears on the screen
-	*/
+	localparam	HOLD = 4'b0,
+					ERASE_BIRDS_1 = 4'd1,
+					DRAW_BIRDS_1 = 4'd2,
+					ERASE_BIRDS_2 = 4'd3,
+					DRAW_BIRDS_2 = 4'd4,
+					ERASE_BIRDS_3 = 4'd5,
+					DRAW_BIRDS_3 = 4'd6,
+					ERASE_BIRDS_4 = 4'd7,
+					DRAW_BIRDS_4 = 4'd8,
+					ERASE_BIRDS_5 = 4'd9,
+					DRAW_BIRDS_5 = 4'd10,
+					ERASE_BIRDS_6 = 4'd11,
+					DRAW_BIRDS_6 = 4'd12,
+					ERASE_HUNTER = 4'd13,
+					DRAW_HUNTER = 4'd15;
+					RESET_DRAW = 4'd16;
+
 	always@(*) 
 	begin // set colour
 		case (current_state)
@@ -152,8 +223,6 @@ module duck_hunt(CLOCK_50, KEY, SW
 			DRAW_BIRDS_5: colour = 3'b111;
 			ERASE_BIRDS_6: colour = 3'b000;
 			DRAW_BIRDS_6: colour = 3'b111;
-			ERASE_BIRDS_7: colour = 3'b000;
-			DRAW_BIRDS_7: colour = 3'b111;
 			ERASE_HUNTER: colour = 3'b000;
 			DRAW_HUNTER: colour = 3'b001;
 		endcase
@@ -199,32 +268,6 @@ module duck_hunt(CLOCK_50, KEY, SW
 		endcase
 	end
 
-	/**
-	MODULE INSTANTIATIONS
-	*/
-	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(frame_reached));
-	
-	vga_adapter VGA(
-		.resetn(KEY[0]),
-		.clock(CLOCK_50),
-		.colour(colour),
-		.x(x_out),
-		.y(y_out),
-		.plot(1'b1),
-		/* Signals for the DAC to drive the monitor. */
-		.VGA_R(VGA_R),
-		.VGA_G(VGA_G),
-		.VGA_B(VGA_B),
-		.VGA_HS(VGA_HS),
-		.VGA_VS(VGA_VS),
-		.VGA_BLANK(VGA_BLANK_N),
-		.VGA_SYNC(VGA_SYNC_N),
-		.VGA_CLK(VGA_CLK));
-		defparam VGA.RESOLUTION = "160x120";
-		defparam VGA.MONOCHROME = "FALSE";
-		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
-		defparam VGA.BACKGROUND_IMAGE = "black.mif";
-	
 endmodule
 
 module bird(cclock, dclock, reset_counter, reset_draw, draw_en, x_out, y_out, done);
