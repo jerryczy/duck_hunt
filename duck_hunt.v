@@ -427,8 +427,31 @@ module draw_bird(clock, x, y, reset, draw_en, new_x, new_y, done);
 	assign done = (current_state == END) ? 1 : 0;
 endmodule
 
-module draw_hunter();
-
+module draw_hunter(clock, x, y, new_x, new_y, done);
+	input clock;
+	input [7:0] x;
+	input [6:0] y;
+	
+	output [7:0] new_x;
+	output [6:0] new_y;
+	output done;
+	
+	/*
+	 xx
+	xxxx
+	xxxx
+	*/
+	localparam	DRAW_0 = 4'b0000,
+				DRAW_1 = 4'b0001,
+				DRAW_2 = 4'b0010,
+				DRAW_3 = 4'b0011,
+				DRAW_4 = 4'b0100,
+				DRAW_5 = 4'b0101,
+				DRAW_6 = 4'b0110,
+				DRAW_7 = 4'b0111;
+				DRAW_8 = 4'b1000;
+				DRAW_9 = 4'b1001;
+		
 endmodule
 
 module random(clock, reset, y);
