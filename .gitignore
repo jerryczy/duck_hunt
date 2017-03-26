@@ -4,3 +4,6 @@ work/_info
 work/_lib1_0.qpg
 *.qtl
 work/_vmake
+*.wlf
+work/_lib1_2.qpg
+work/_lib1_3.qpg

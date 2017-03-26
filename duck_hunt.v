@@ -28,9 +28,10 @@ module duck_hunt(CLOCK_50, KEY, SW
 	output	[9:0]	VGA_G;	 				//	VGA Green[9:0]
 	output	[9:0]	VGA_B;   				//	VGA Blue[9:0]	
 	
+
 	wire [7:0] plot_x_1, plot_x_2, plot_x_3, plot_x_4, plot_x_5, plot_x_6, plot_x_h, x_out;
 	wire [6:0] plot_y_1, plot_y_2, plot_y_3, plot_y_4, plot_y_5, plot_y_6, plot_y_h, y_out;
-	wire draw_en;
+	wire count_en, draw_en;
 	wire frame_reached;
 	wire done_draw_1, done_draw_2, done_draw_3, done_draw_4, done_draw_5, done_draw_h;
 	wire bird_finish;
@@ -218,20 +219,21 @@ module duck_hunt(CLOCK_50, KEY, SW
 	
 endmodule
 
-module bird(clock, num, reset, draw_en, x_out, y_out, done);
-	input clock;
-	input [1:0] num;
-	input reset, draw_en;
+module bird(clock, reset, count_en, draw_en, x_out, y_out, done);
+	input clock, reset, count_en, draw_en;
 	output [7:0] x_out;
 	output [6:0] y_out;
 	output done;
+	
+	wire [7:0] x;
+	wire [6:0] y;
 
 	bird_counter bcount(
 		.clock(clock), 
 		.reset(reset), 
-		.enable(draw_en), 
+		.enable(count_en), 
 		.new_x(x));
-	
+		
 	random num1(
 		.clock(clock),
 		.reset(reset),
@@ -239,7 +241,7 @@ module bird(clock, num, reset, draw_en, x_out, y_out, done);
 		
 	wire [7:0] x;
 	wire [6:0] y;
-		
+	
 	draw_bird d1(
 		.clock(clock),
 		.x(x),
