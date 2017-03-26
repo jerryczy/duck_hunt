@@ -40,38 +40,37 @@ module duck_hunt(CLOCK_50, KEY, SW
 	reg [2:0] current_state, next_state;
 	
 	assign [2:0] num = [9:7] SW;
-	assign count_en = 1'b1;
 	assign draw_en = 1'b1;
 
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
-	bird b1(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_1), .y_out(plot_y_1), .done(done_draw_1));
-	bird b2(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_2), .y_out(plot_y_2), .done(done_draw_2));
-	bird b3(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_3), .y_out(plot_y_3), .done(done_draw_3));
-	bird b4(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
-	bird b5(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
-	bird b6(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
-	bird b7(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_7), .y_out(plot_y_7), .done(done_draw_7));
+	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_1), .y_out(plot_y_1), .done(done_draw_1));
+	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_2), .y_out(plot_y_2), .done(done_draw_2));
+	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_3), .y_out(plot_y_3), .done(done_draw_3));
+	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
+	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
+	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
+	bird b7(.cclock(frame_reached), .dclock(CLOCK_50), .reset(KEY[0]), .draw_en(draw_en), .x_out(plot_x_7), .y_out(plot_y_7), .done(done_draw_7));
 	
 	/**
 	CONTROL BIRD
 	*/
 	localparam	HOLD = 4'b0,
-					ERASE_BIRDS_1 = 4'b1,
-					DRAW_BIRDS_1 = 4'b2,
-					ERASE_BIRDS_2 = 4'b3,
-					DRAW_BIRDS_2 = 4'b4,
-					ERASE_BIRDS_3 = 4'b5,
-					DRAW_BIRDS_3 = 4'b6,
-					ERASE_BIRDS_4 = 4'b7,
-					DRAW_BIRDS_4 = 4'b8,
-					ERASE_BIRDS_5 = 4'b9,
-					DRAW_BIRDS_5 = 4'b10,
-					ERASE_BIRDS_6 = 4'b11,
-					DRAW_BIRDS_6 = 4'b12,
-					ERASE_HUNTER = 4'b13,
-					DRAW_HUNTER = 4'b15;
+					ERASE_BIRDS_1 = 4'd1,
+					DRAW_BIRDS_1 = 4'd2,
+					ERASE_BIRDS_2 = 4'd3,
+					DRAW_BIRDS_2 = 4'd4,
+					ERASE_BIRDS_3 = 4'd5,
+					DRAW_BIRDS_3 = 4'd6,
+					ERASE_BIRDS_4 = 4'd7,
+					DRAW_BIRDS_4 = 4'd8,
+					ERASE_BIRDS_5 = 4'd9,
+					DRAW_BIRDS_5 = 4'd10,
+					ERASE_BIRDS_6 = 4'd11,
+					DRAW_BIRDS_6 = 4'd12,
+					ERASE_HUNTER = 4'd13,
+					DRAW_HUNTER = 4'd15;
 				
 	always@(*) 
 	begin
@@ -221,8 +220,10 @@ module duck_hunt(CLOCK_50, KEY, SW
 	
 endmodule
 
-module bird(clock, reset, count_en, draw_en, x_out, y_out, done);
-	input clock, reset, count_en, draw_en;
+module bird(cclock, dclock, reset, count_en, draw_en, x_out, y_out, done);
+	//cclock = clock for bird_counter
+	//dclock = clock for draw_bird
+	input cclock, dclock, reset, count_en, draw_en;
 	output [7:0] x_out;
 	output [6:0] y_out;
 	output done;
@@ -231,13 +232,13 @@ module bird(clock, reset, count_en, draw_en, x_out, y_out, done);
 	wire [6:0] y;
 
 	bird_counter bcount(
-		.clock(clock), 
+		.clock(cclock), 
 		.reset(reset), 
 		.enable(count_en), 
 		.new_x(x));
 		
 	random num1(
-		.clock(clock),
+		.clock(dclock),
 		.reset(reset),
 		.y(y));
 		
@@ -245,7 +246,7 @@ module bird(clock, reset, count_en, draw_en, x_out, y_out, done);
 	wire [6:0] y;
 	
 	draw_bird d1(
-		.clock(clock),
+		.clock(dclock),
 		.x(x),
 		.y(y), 
 		.reset(reset), 
