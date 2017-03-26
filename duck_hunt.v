@@ -15,7 +15,9 @@ module duck_hunt(CLOCK_50, KEY,
 		VGA_SYNC_N,						//	VGA SYNC
 		VGA_R,   						//	VGA Red[9:0]
 		VGA_G,	 						//	VGA Green[9:0]
-		VGA_B);
+		VGA_B,
+		PS2_DAT,
+		PS2_CLK);
 	input CLOCK_50;
 	input [1:0] KEY;
 	output			VGA_CLK;   				//	VGA Clock
@@ -26,6 +28,7 @@ module duck_hunt(CLOCK_50, KEY,
 	output	[9:0]	VGA_R;   				//	VGA Red[9:0]
 	output	[9:0]	VGA_G;	 				//	VGA Green[9:0]
 	output	[9:0]	VGA_B;   				//	VGA Blue[9:0]	
+	input PS2_DAT, PS2_CLK;
 	
 
 	wire [7:0] plot_x_1, plot_x_2, plot_x_3, plot_x_4, plot_x_5, plot_x_6, plot_x_h, x_out;
@@ -35,6 +38,8 @@ module duck_hunt(CLOCK_50, KEY,
 	wire [2:0] colour;
 	wire [s:0] current_state;
 	wire [6:0] reset_draw, reset_counter, draw_en;
+	wire valid, makeBreak;
+	wire [7:0] outCode,
 
 	assign [6:0] draw_en = 7'b1111111; //for now
 
@@ -92,6 +97,38 @@ module duck_hunt(CLOCK_50, KEY,
 		defparam VGA.MONOCHROME = "FALSE";
 		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
 		defparam VGA.BACKGROUND_IMAGE = "black.mif";
+		
+	keyboard_press_driver k1(
+		.CLOCK_50(CLOCK_50), 
+		.valid(valid), .makeBreak(makeBreak), // 1 for make and 0 for break 
+		.outCode(outCode),
+		.PS2_DAT(PS2_DAT), // PS2 data line
+		.PS2_CLK(PS2_CLK), // PS2 clock line
+		.reset()// ??? needed
+		);
+	
+	/*
+	Keyboard input
+	*/
+	
+	wire shot, left, right;
+	
+	always@(*) begin
+		if (valid) begin
+			if (makeBreak)
+				case (outCode)
+					E0,75: shot = 1'b1;
+					E0,6B: left = 1'b1;
+					E0,74: right = 1'b1;
+				endcase
+			else
+				case (outCode)
+					E0,F0,75: shot = 1'b0;
+					E0,F0,6B: left = 1'b0;
+					E0,F0,74: right = 1'b0;
+				endcase
+		end
+	end
 	
 endmodule
 
