@@ -44,7 +44,9 @@ module duck_hunt(CLOCK_50, KEY,
 	wire reset_hunter;
 
 	wire valid, makeBreak;
-	wire [7:0] outCode,
+	wire [7:0] outCode;
+	
+	wire [7:0] hunter_X;
 
 	assign draw_en = 6'b1111111; //for now
 
@@ -57,8 +59,10 @@ module duck_hunt(CLOCK_50, KEY,
 	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[3]), .reset_draw(reset_draw[3]), .draw_en(draw_en[3]), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
 	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[4]), .reset_draw(reset_draw[4]), .draw_en(draw_en[4]), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
 	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[5]), .reset_draw(reset_draw[5]), .draw_en(draw_en[5]), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
-	hunter h1(.clock(CLOCK_50), .reset_hunter(reset_hunter), .x_out(plot_x_h), .y_out(plot_y_h), .done(done_draw_h));
-
+	hunter h1(.clock(CLOCK_50), .x(hunter_X), .reset_hunter(reset_hunter), .x_out(plot_x_h), .y_out(plot_y_h), .done(done_draw_h));
+	hunter_action ha(.clock(CLOCK_50), .valid(valid), .makeBreak(makeBreak), .outCode(outCode), .x(hunter_X));
+	
+	
 	control c1(
 		.clock(CLOCK_50),
 		.frame_reached(frame_reached),
@@ -82,7 +86,7 @@ module duck_hunt(CLOCK_50, KEY,
 	/**
 	MODULE INSTANTIATIONS
 	*/
-	frame_counter fram (.num(4'b1111), .clock(CLOCK_50), .reset(KEY[1]), .q(frame_reached));
+	frame_counter fram (.num(6'b001111), .clock(CLOCK_50), .reset(KEY[1]), .q(frame_reached));
 	
 	vga_adapter VGA(
 		.resetn(KEY[0]),
@@ -113,30 +117,6 @@ module duck_hunt(CLOCK_50, KEY,
 		.PS2_CLK(PS2_CLK), // PS2 clock line
 		.reset()// ??? needed
 		);
-	
-	/*
-	Keyboard input
-	*/
-	
-	wire shot, left, right;
-	
-	always@(*) begin
-		if (valid) begin
-			if (makeBreak)
-				case (outCode)
-					E0,75: shot = 1'b1;
-					E0,6B: left = 1'b1;
-					E0,74: right = 1'b1;
-				endcase
-			else
-				case (outCode)
-					E0,F0,75: shot = 1'b0;
-					E0,F0,6B: left = 1'b0;
-					E0,F0,74: right = 1'b0;
-				endcase
-		end
-	end
-	
 endmodule
 
 module control(
@@ -464,10 +444,9 @@ module draw_bird(clock, x, y, reset, draw_en, new_x, new_y, done);
 	assign done = (current_state == END || ~draw_en) ? 1 : 0;
 endmodule
 
-module hunter(clock, x, y, reset_hunter, x_out, y_out, done);
+module hunter(clock, x, reset_hunter, x_out, y_out, done);
 	input clock;
 	input [7:0] x;
-	input [6:0] y;
 	input reset_hunter;
 	
 	output [7:0] x_out = temp_x;
@@ -479,6 +458,8 @@ module hunter(clock, x, y, reset_hunter, x_out, y_out, done);
 	
 	reg [3:0] current_state = END;
 	reg [3:0] next_state;
+	
+	assign y = 7'b118;
 	
 	/*
 	 xx
@@ -561,6 +542,54 @@ module hunter(clock, x, y, reset_hunter, x_out, y_out, done);
 	assign done = (current_state == END) ? 1 : 0;	
 endmodule
 
+module hunter_action(
+	input clock,
+	input valid, makeBreak,
+	input [7:0] outCode
+	output [7:0] x
+	);
+	
+	/*
+	Keyboard input
+	*/
+	reg [7:0] x = 8'b80;
+	wire shoot, left, right;
+	reg reloaded = 1'b1;
+	
+	always@(*) begin
+		if (valid) begin
+			if (makeBreak)
+				case (outCode)
+					E0,75: shoot = 1'b1;
+					E0,6B: left = 1'b1;
+					E0,74: right = 1'b1;
+				endcase
+			else
+				case (outCode)
+					E0,F0,75: shoot = 1'b0;
+					E0,F0,6B: left = 1'b0;
+					E0,F0,74: right = 1'b0;
+				endcase
+		end
+	end
+	// move or shoot
+	always@(posedge clock) begin
+		if (right && (x != 8'b158))
+			x <= x + 1;
+		else if (left && (x != 0))
+			x <= x - 1;
+		else if (shoot && reloaded)
+			begin
+				//draw rectangle
+				//reset
+				reloaded <= 1'b0
+			end
+	end
+	
+	frame_counter framh (.num(6'b111100), .clock(clock), .reset(reset), .q(reloaded)); // 1s relad time
+	
+endmodule
+
 module random(clock, reset, y);
 	input clock;
    input reset;
@@ -587,14 +616,14 @@ module random(clock, reset, y);
 endmodule
 
 module frame_counter(num, clock, reset, q); // output 1 if desinated fram number reached.
-	input [3:0] num;
+	input [5:0] num;
 	input clock;
 	input reset;
 	output reg q = 0;
 	
 	wire count;
 	
-	reg [3:0] temp = 0;
+	reg [5:0] temp = 0;
 	
 	
 	delay_counter delay(
