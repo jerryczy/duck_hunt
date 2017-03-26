@@ -40,17 +40,19 @@ module duck_hunt(CLOCK_50, KEY, SW
 	reg [2:0] current_state, next_state;
 	
 	assign [2:0] num = [9:7] SW;
+	assign count_en = 1'b1;
+	assign draw_en = 1'b1;
 
 	/*
 	INSTANTIATE MULTIPLE BIRDS.
 	*/
-	bird b1(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_1), .y_out(plot_y_1), .done(done_draw_1));
-	bird b2(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_2), .y_out(plot_y_2), .done(done_draw_2));
-	bird b3(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_3), .y_out(plot_y_3), .done(done_draw_3));
-	bird b4(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
-	bird b5(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
-	bird b6(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
-	bird b7(.clock(frame_reached), .num(num), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_7), .y_out(plot_y_7), .done(done_draw_7));
+	bird b1(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_1), .y_out(plot_y_1), .done(done_draw_1));
+	bird b2(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_2), .y_out(plot_y_2), .done(done_draw_2));
+	bird b3(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_3), .y_out(plot_y_3), .done(done_draw_3));
+	bird b4(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_4), .y_out(plot_y_4), .done(done_draw_4));
+	bird b5(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_5), .y_out(plot_y_5), .done(done_draw_5));
+	bird b6(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
+	bird b7(.clock(frame_reached), .reset(KEY[0]), .count_en(count_en), .draw_en(draw_en), .x_out(plot_x_7), .y_out(plot_y_7), .done(done_draw_7));
 	
 	/**
 	CONTROL BIRD
