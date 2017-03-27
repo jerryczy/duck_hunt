@@ -41,7 +41,7 @@ module duck_hunt(CLOCK_50, KEY,
 
 	wire [4:0] current_state;
 	wire [5:0] reset_draw, reset_counter, draw_en;
-	wire reset_hunter;
+	wire reset_hunter, reset_laser;
 
 	wire valid, makeBreak;
 	wire [7:0] outCode;
@@ -62,16 +62,16 @@ module duck_hunt(CLOCK_50, KEY,
 	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(reset_counter[5]), .reset_draw(reset_draw[5]), .draw_en(draw_en[5]), .x_out(plot_x_6), .y_out(plot_y_6), .done(done_draw_6));
 	hunter h1(.clock(CLOCK_50), .x(hunter_X), .reset_hunter(reset_hunter), .x_out(plot_x_h), .y_out(plot_y_h), .done(done_draw_h));
 	hunter_action ha(.clock(CLOCK_50), .valid(valid), .makeBreak(makeBreak), .outCode(outCode), .x(hunter_X), .shoot(shoot));
-	laser lh(.clock(CLOCK), .shoot(shoot), .x(hunter_x), .laser_x(plot_x_l), .laser_y(plot_y_l), .done_draw_l(done_draw_l));
+	laser lh(.clock(CLOCK), .reset(reset_laser), .shoot(shoot), .x(hunter_x), .laser_x(plot_x_l), .laser_y(plot_y_l), .done(done_draw_l));
 	
 	control c1(
 		.clock(CLOCK_50),
 		.frame_reached(frame_reached),
 		.done_draw_1(done_draw_1), .done_draw_2(done_draw_2), .done_draw_3(done_draw_3), .done_draw_4(done_draw_4), .done_draw_5(done_draw_5), .done_draw_6(done_draw_6), .done_draw_l(done_draw_l),
-		.done_draw_h(done_draw_h),
+		.done_draw_h(done_draw_h), .shoot(shoot),
 		.reset(KEY[0]),
 		.reset_draw(reset_draw),
-	 	.reset_hunter(reset_hunter),
+	 	.reset_hunter(reset_hunter), .reset_laser(reset_laser),
 		.curr(current_state)
 	);
 	
@@ -124,9 +124,10 @@ module control(
 	input clock,
 	input frame_reached,
 	input done_draw_1, done_draw_2, done_draw_3, done_draw_4, done_draw_5, done_draw_6, done_draw_h, done_draw_l,
+	input shoot,
 	input reset,
 	output reg [5:0] reset_draw,
-	output reg reset_hunter,
+	output reg reset_hunter, reset_laser,
 	output [4:0] curr
 	);
 	
@@ -173,7 +174,7 @@ module control(
 			ERASE_BIRDS_6: next_state = done_draw_6 ? DRAW_BIRDS_6 : ERASE_BIRDS_6;
 			DRAW_BIRDS_6: next_state = done_draw_6 ? ERASE_HUNTER : DRAW_BIRDS_6;
 			ERASE_HUNTER: next_state = done_draw_h ? DRAW_HUNTER : ERASE_HUNTER;
-			DRAW_HUNTER: next_state = done_draw_h ? DRAW_LASER : DRAW_HUNTER;
+			DRAW_HUNTER: next_state = done_draw_h ? (shoot ? DRAW_LASER : HOLD) : DRAW_HUNTER;
 			DRAW_LASER: next_state = done_draw_l ? ERASE_LASER : DRAW_LASER;
 			ERASE_LASER: next_state = done_draw_l ? HOLD : ERASE_LASER;
 			default: next_state = HOLD;
@@ -181,7 +182,7 @@ module control(
 			//and if we reach one bird with draw_en disabled, then we go to next state.
 		endcase
 	end
-		
+	
 	always@(posedge clock)
 	begin
 		if (reset)
@@ -204,6 +205,8 @@ module control(
 						DRAW_BIRDS_6: reset_draw[5] = 1;
 						ERASE_HUNTER: reset_hunter = 1;
 						DRAW_HUNTER: reset_hunter = 1;
+						DRAW_LASER: reset_laser = 1;
+						ERASE_LASER: reset_laser = 1;
 					endcase
 				end
 			else begin
@@ -603,9 +606,39 @@ module hunter_action(
 	
 endmodule
 
-module laser (clock, shoot, x/*(hunter_x)*/, laser_x, laser_y);
+module laser (clock, reset, shoot, x/*(hunter_x)*/, laser_x, laser_y, done);
+	input clock;
+	input reset, shoot;
+	input [7:0] x;
+	output [7:0] laser_x;
+	output [6:0] laser_y;
+	output done;
 
-	//frame_counter framh (.num(6'b111100), .clock(clock), .reset(reset), .q(reloaded)); // 1s relad time
+	reg [6:0] q;
+	reg done = 1'b0;
+	reg reload = reloaded;
+	wire reloaded;
+
+	always @(posedge clock, negedge reset)
+	begin
+		if (reload) begin
+			if (reset)
+				q <= 7'b1110110;
+			else begin
+				if (q == 0) begin
+					done <= 1'b1;
+					reload <= 0;
+				end
+				else
+					q <= q - 1'b1;
+			end
+		end
+	end
+	
+	assign laser_y = q;
+	assign laser_x = x + 2'b11.
+
+	frame_counter framh (.num(6'b111100), .clock(clock), .reset(reset), .q(reloaded)); // 1s reload time
 
 endmodule
 
