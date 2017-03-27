@@ -128,6 +128,8 @@ module control(
 	output reg reset_hunter,
 	output [3:0] curr
 	);
+	
+	wire one_frame;
 
 	localparam	HOLD = 4'b0,
 					ERASE_BIRDS_1 = 4'd1,
@@ -154,7 +156,7 @@ module control(
 	always@(*) 
 	begin
 		case (current_state) //when frame is reached, we must erase old birds and draw new birds.
-			HOLD: next_state = (frame_reached) ? ERASE_BIRDS_1 : HOLD;
+			HOLD: next_state = (one_frame) ? ERASE_BIRDS_1 : HOLD;
 			ERASE_BIRDS_1: next_state = done_draw_1 ? DRAW_BIRDS_1 : ERASE_BIRDS_1;
 			DRAW_BIRDS_1: next_state = done_draw_1 ? ERASE_BIRDS_1 : DRAW_BIRDS_1;
 			ERASE_BIRDS_2: next_state = done_draw_2 ? DRAW_BIRDS_2 : ERASE_BIRDS_2;
@@ -206,7 +208,11 @@ module control(
 			current_state <= next_state;
 		end
 	end
-
+	
+	//Goes one_frame high every 1/60th of a second.
+	frame_counter(.num(1'b1), .clock(clock), .reset(reset), .q(one_frame));
+	
+module delay_counter(clock, reset, q);
 endmodule
 
 module datapath (
