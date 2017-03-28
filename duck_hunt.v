@@ -162,15 +162,15 @@ module control(
 		case (current_state) //when frame is reached, we must erase old birds and draw new birds.
 			HOLD: next_state = (one_frame) ? ERASE_BIRDS_1 : HOLD;
 			ERASE_BIRDS_1: next_state = done_draw_1 ? DRAW_BIRDS_1 : ERASE_BIRDS_1;
-			DRAW_BIRDS_1: next_state = done_draw_1 ? ERASE_BIRDS_1 : DRAW_BIRDS_1;
+			DRAW_BIRDS_1: next_state = done_draw_1 ? ERASE_BIRDS_2 : DRAW_BIRDS_1;
 			ERASE_BIRDS_2: next_state = done_draw_2 ? DRAW_BIRDS_2 : ERASE_BIRDS_2;
-			DRAW_BIRDS_2: next_state = done_draw_2 ? ERASE_BIRDS_2 : DRAW_BIRDS_2;
+			DRAW_BIRDS_2: next_state = done_draw_2 ? ERASE_BIRDS_3 : DRAW_BIRDS_2;
 			ERASE_BIRDS_3: next_state = done_draw_3 ? DRAW_BIRDS_3 : ERASE_BIRDS_3;
-			DRAW_BIRDS_3: next_state = done_draw_3 ? ERASE_BIRDS_3 : DRAW_BIRDS_3;
+			DRAW_BIRDS_3: next_state = done_draw_3 ? ERASE_BIRDS_4 : DRAW_BIRDS_3;
 			ERASE_BIRDS_4: next_state = done_draw_4 ? DRAW_BIRDS_4 : ERASE_BIRDS_4;
-			DRAW_BIRDS_4: next_state = done_draw_4 ? ERASE_BIRDS_4 : DRAW_BIRDS_4;
+			DRAW_BIRDS_4: next_state = done_draw_4 ? ERASE_BIRDS_5 : DRAW_BIRDS_4;
 			ERASE_BIRDS_5: next_state = done_draw_5 ? DRAW_BIRDS_5 : ERASE_BIRDS_5;
-			DRAW_BIRDS_5: next_state = done_draw_5 ? ERASE_BIRDS_5 : DRAW_BIRDS_5;
+			DRAW_BIRDS_5: next_state = done_draw_5 ? ERASE_BIRDS_6 : DRAW_BIRDS_5;
 			ERASE_BIRDS_6: next_state = done_draw_6 ? DRAW_BIRDS_6 : ERASE_BIRDS_6;
 			DRAW_BIRDS_6: next_state = done_draw_6 ? ERASE_HUNTER : DRAW_BIRDS_6;
 			ERASE_HUNTER: next_state = done_draw_h ? DRAW_HUNTER : ERASE_HUNTER;
