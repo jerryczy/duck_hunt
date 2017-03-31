@@ -11,3 +11,4 @@ qmegawiz_errors_log.txt
 *.cnx
 vga_pll.cnxerr
 *.qip
+*.qpg
