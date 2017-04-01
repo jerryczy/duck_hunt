@@ -293,7 +293,7 @@ module draw_bird(
 			current_state <= next_state;
 	end
 	
-	assign done = (current_state == END) ? 1 : 0;
+	assign done = (current_state == END && ~reset) ? 1 : 0;
 	
 endmodule
 
