@@ -62,9 +62,6 @@ module duck_hunt(CLOCK_50, KEY,
 	wire reset;
 	assign reset = KEY[0];
 	
-	/*
-	Datapath (Because Verilog won't let you pass 2D arrays as input for some reason).
-	*/
 	localparam 	HOLD = 5'd0,
 				ERASE_BIRD_0 = 5'd1,
 				DRAW_BIRD_0 = 5'd2,
@@ -80,6 +77,13 @@ module duck_hunt(CLOCK_50, KEY,
 				DRAW_BIRD_5 = 5'd12,
 				ERASE_BIRD_6 = 5'd13,
 				DRAW_BIRD_6 = 5'd14;
+				
+	assign plot = (current_state == HOLD) ? 0 : 1;
+	
+	/*
+	Datapath (Because Verilog won't let you pass 2D arrays as input for some reason).
+	*/
+
 				
 	always @(*)
 	begin
@@ -282,7 +286,7 @@ module bird(cclock, dclock, reset_counter, reset_draw, x_out, y_out, done, test_
 	output done;
 
 	wire [7:0] x;
-	wire [6:0] y = $urandom%20;
+	wire [6:0] y = $urandom%110 + 10;
 		assign test_x = x;
 		assign test_y = y;
 	
@@ -305,7 +309,6 @@ module bird(cclock, dclock, reset_counter, reset_draw, x_out, y_out, done, test_
 		.x_out(x_out), 
 		.y_out(y_out),
 		.done(done));
-		
 endmodule
 
 module draw_bird(
