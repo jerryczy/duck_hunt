@@ -133,7 +133,7 @@ module duck_hunt(CLOCK_50, KEY,
 	
 	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .x_out(x_out), .y_out(y_out), .done(done_draw[0]), .test_x(test_x));
 
-	frame_counter fbird(.num(6'b111111), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
+	frame_counter fbird(.num(6'b100000), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
 
 	frame_counter f1(.num(6'b000001), .clock(CLOCK_50), .reset(1'b0), .q(one_frame));
 
