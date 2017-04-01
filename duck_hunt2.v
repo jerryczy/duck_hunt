@@ -47,13 +47,158 @@ module duck_hunt(CLOCK_50, KEY,
 	
 	wire [7:0] x_out [0:6];
 	wire [7:0] test_x;
+	reg [7:0] plot_x;
 	wire [6:0] y_out [0:6];
-	wire frame_reached, one_frame, reset_f_counter, reset;
+	wire [6:0] test_y;
+	reg [6:0] plot_y;
 	reg [2:0] colour;
-	wire [6:0] done_draw;
-	reg [6:0] reset_draw;
 	
+	wire [4:0] current_state;
+	wire frame_reached, one_frame; 
+
+	wire [6:0] done_draw;
+	wire [6:0] reset_draw;
+	
+	wire reset;
 	assign reset = KEY[0];
+	
+	/*
+	Datapath (Because Verilog won't let you pass 2D arrays as input for some reason).
+	*/
+	localparam 	HOLD = 5'd0,
+				ERASE_BIRD_0 = 5'd1,
+				DRAW_BIRD_0 = 5'd2,
+				ERASE_BIRD_1 = 5'd3,
+				DRAW_BIRD_1 = 5'd4,
+				ERASE_BIRD_2 = 5'd5,
+				DRAW_BIRD_2 = 5'd6,
+				ERASE_BIRD_3 = 5'd7,
+				DRAW_BIRD_3 = 5'd8,
+				ERASE_BIRD_4 = 5'd9,
+				DRAW_BIRD_4 = 5'd10,
+				ERASE_BIRD_5 = 5'd11,
+				DRAW_BIRD_5 = 5'd12,
+				ERASE_BIRD_6 = 5'd13,
+				DRAW_BIRD_6 = 5'd14;
+				
+	always @(*)
+	begin
+		colour = 3'b000;
+		case (current_state)
+			ERASE_BIRD_0: begin
+				plot_x = x_out[0];
+				plot_y = y_out[0];
+			end
+			DRAW_BIRD_0: begin
+				colour = 3'b111;
+				plot_x = x_out[0];
+				plot_y = y_out[0];
+			end
+			ERASE_BIRD_1: begin
+				plot_x = x_out[1];
+				plot_y = y_out[1];
+			end
+			DRAW_BIRD_1: begin
+				colour = 3'b111;
+				plot_x = x_out[1];
+				plot_y = y_out[1];
+			end
+			ERASE_BIRD_2: begin
+				plot_x = x_out[2];
+				plot_y = y_out[2];
+			end
+			DRAW_BIRD_2: begin
+				colour = 3'b111;
+				plot_x = x_out[2];
+				plot_y = y_out[2];
+			end
+			ERASE_BIRD_3: begin
+				plot_x = x_out[3];
+				plot_y = y_out[3];
+			end
+			DRAW_BIRD_3: begin
+				colour = 3'b111;
+				plot_x = x_out[3];
+				plot_y = y_out[3];
+			end
+			ERASE_BIRD_4: begin
+				plot_x = x_out[4];
+				plot_y = y_out[4];
+			end
+			DRAW_BIRD_4: begin
+				colour = 3'b111;
+				plot_x = x_out[4];
+				plot_y = y_out[4];
+			end
+			ERASE_BIRD_5: begin
+				plot_x = x_out[5];
+				plot_y = y_out[5];
+			end
+			DRAW_BIRD_5: begin
+				colour = 3'b111;
+				plot_x = x_out[5];
+				plot_y = y_out[5];
+			end
+			ERASE_BIRD_6: begin
+				plot_x = x_out[6];
+				plot_y = y_out[6];
+			end
+			DRAW_BIRD_6: begin
+				colour = 3'b111;
+				plot_x = x_out[6];
+				plot_y = y_out[6];
+			end
+// 			ERASE_HUNTER: colour = 3'b000;
+// 			DRAW_HUNTER: colour = 3'b001;
+// 			DRAW_LASER: colour = 3'b010;
+// 			ERASE_LASER: colour = 3'b000;
+		endcase
+	end
+	
+	/*
+	Module Instantiations
+	*/
+	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .x_out(x_out[0]), .y_out(y_out[0]), .done(done_draw[0]), .test_x(test_x), .test_y(test_y));
+	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[1]), .x_out(x_out[1]), .y_out(y_out[1]), .done(done_draw[1]));
+	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[2]), .x_out(x_out[2]), .y_out(y_out[2]), .done(done_draw[2]));
+	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[3]), .x_out(x_out[3]), .y_out(y_out[3]), .done(done_draw[3]));
+	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[4]), .x_out(x_out[4]), .y_out(y_out[4]), .done(done_draw[4]));
+	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
+	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
+	
+	draw_control dc(.clock(CLOCK_50), .done_draw(done_draw), .one_frame(one_frame),  .reset(reset), .reset_draw(reset_draw), .current_state(current_state));
+	
+	frame_counter fbird(.num(6'b111111), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
+	rate_divider f1(.clock(CLOCK_50), .reset(1'b0), .one_frame(one_frame));
+
+	/*
+	vga_adapter VGA(
+		.resetn(KEY[0]),
+		.clock(CLOCK_50),
+		.colour(colour),
+		.x(plot_x),
+		.y(plot_y),
+		.plot(1'b1),
+		.VGA_R(VGA_R),
+		.VGA_G(VGA_G),
+		.VGA_B(VGA_B),
+		.VGA_HS(VGA_HS),
+		.VGA_VS(VGA_VS),
+		.VGA_BLANK(VGA_BLANK_N),
+		.VGA_SYNC(VGA_SYNC_N),
+		.VGA_CLK(VGA_CLK));
+		defparam VGA.RESOLUTION = "160x120";
+		defparam VGA.MONOCHROME = "FALSE";
+		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
+		defparam VGA.BACKGROUND_IMAGE = "black.mif";
+	*/
+		
+endmodule
+
+module draw_control(clock, done_draw, one_frame, reset, reset_draw, current_state);
+	input clock, reset, one_frame;
+	input [6:0] done_draw;
+	output reg [6:0] reset_draw = 7'b0;
 	
 	localparam 	HOLD = 5'd0,
 				ERASE_BIRD_0 = 5'd1,
@@ -71,18 +216,13 @@ module duck_hunt(CLOCK_50, KEY,
 				ERASE_BIRD_6 = 5'd13,
 				DRAW_BIRD_6 = 5'd14;
 				
-			
-	reg [4:0] current_state = HOLD;
+	output reg [4:0] current_state = HOLD;
 	reg [4:0] next_state;
-	
-			
-	/*
-	Control
-	*/
+		
 	always @(*)
 	begin
 		case(current_state)
-			HOLD: 		next_state = one_frame ? ERASE_BIRD_0 : HOLD;
+			HOLD: next_state = one_frame ? ERASE_BIRD_0 : HOLD;
 			ERASE_BIRD_0: next_state = done_draw[0] ? DRAW_BIRD_0 : ERASE_BIRD_0;
 			DRAW_BIRD_0: next_state = done_draw[0] ? ERASE_BIRD_1 : DRAW_BIRD_0;
 			ERASE_BIRD_1: 	next_state = done_draw[1] ? DRAW_BIRD_1 : ERASE_BIRD_1;
@@ -97,6 +237,7 @@ module duck_hunt(CLOCK_50, KEY,
 			DRAW_BIRD_5: next_state = done_draw[5] ? ERASE_BIRD_6 : DRAW_BIRD_5;
 			ERASE_BIRD_6: next_state = done_draw[6] ? DRAW_BIRD_6 : ERASE_BIRD_6;
 			DRAW_BIRD_6: next_state = done_draw[6] ? HOLD : DRAW_BIRD_6;
+			
 // 			ERASE_HUNTER: next_state = done_draw_h ? DRAW_HUNTER : ERASE_HUNTER;
 // 			DRAW_HUNTER: next_state = done_draw_h ? (shoot ? DRAW_LASER : HOLD) : DRAW_HUNTER;
 // 			DRAW_LASER: next_state = done_draw_l ? ERASE_LASER : DRAW_LASER;
@@ -105,7 +246,7 @@ module duck_hunt(CLOCK_50, KEY,
 		endcase
 	end
 	
-	always @(posedge CLOCK_50)
+	always @(posedge clock)
 	begin
 		if (current_state != next_state) begin
 			case(next_state)
@@ -130,83 +271,20 @@ module duck_hunt(CLOCK_50, KEY,
 		end
 		current_state <= next_state;
 	end
-	
-	/*
-	Datapath
-	*/
-	
-	always @(*)
-	begin
-		case (current_state)
-			ERASE_BIRD_0: colour = 3'b000;
-			DRAW_BIRD_0: colour = 3'b111;
-			ERASE_BIRD_1: colour = 3'b000;
-			DRAW_BIRD_1: colour = 3'b111;
-			ERASE_BIRD_2: colour = 3'b000;
-			DRAW_BIRD_2: colour = 3'b111;
-			ERASE_BIRD_3: colour = 3'b000;
-			DRAW_BIRD_3: colour = 3'b111;
-			ERASE_BIRD_4: colour = 3'b000;
-			DRAW_BIRD_4: colour = 3'b111;
-			ERASE_BIRD_5: colour = 3'b000;
-			DRAW_BIRD_5: colour = 3'b111;
-			ERASE_BIRD_6: colour = 3'b000;
-			DRAW_BIRD_6: colour = 3'b111;
-// 			ERASE_HUNTER: colour = 3'b000;
-// 			DRAW_HUNTER: colour = 3'b001;
-// 			DRAW_LASER: colour = 3'b010;
-// 			ERASE_LASER: colour = 3'b000;
-		endcase
-	end
-
-	
-	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .x_out(x_out[0]), .y_out(y_out[0]), .done(done_draw[0]), .test_x(test_x));
-	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[1]), .x_out(x_out[1]), .y_out(y_out[1]), .done(done_draw[1]));
-	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[2]), .x_out(x_out[2]), .y_out(y_out[2]), .done(done_draw[2]));
-	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[3]), .x_out(x_out[3]), .y_out(y_out[3]), .done(done_draw[3]));
-	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[4]), .x_out(x_out[4]), .y_out(y_out[4]), .done(done_draw[4]));
-	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
-	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
-	
-	frame_counter fbird(.num(6'b111111), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
-
-	frame_counter f1(.num(6'b000001), .clock(CLOCK_50), .reset(1'b0), .q(one_frame));
-
-	/*
-	vga_adapter VGA(
-		.resetn(KEY[0]),
-		.clock(CLOCK_50),
-		.colour(3'b111),
-		.x(x_out),
-		.y(y_out),
-		.plot(1'b1),
-		.VGA_R(VGA_R),
-		.VGA_G(VGA_G),
-		.VGA_B(VGA_B),
-		.VGA_HS(VGA_HS),
-		.VGA_VS(VGA_VS),
-		.VGA_BLANK(VGA_BLANK_N),
-		.VGA_SYNC(VGA_SYNC_N),
-		.VGA_CLK(VGA_CLK));
-		defparam VGA.RESOLUTION = "160x120";
-		defparam VGA.MONOCHROME = "FALSE";
-		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
-		defparam VGA.BACKGROUND_IMAGE = "black.mif";
-	*/
-		
 endmodule
 
-module bird(cclock, dclock, reset_counter, reset_draw, x_out, y_out, done, test_x);
+module bird(cclock, dclock, reset_counter, reset_draw, x_out, y_out, done, test_x, test_y);
 	//cclock = clock for bird_counter
 	//dclock = clock for draw_bird
 	input cclock, dclock, reset_counter, reset_draw;
 	output [7:0] x_out, test_x;
-	output [6:0] y_out;
+	output [6:0] y_out, test_y;
 	output done;
 
 	wire [7:0] x;
-	wire [6:0] y = 7'b0000111;
+	wire [6:0] y = $urandom%20;
 		assign test_x = x;
+		assign test_y = y;
 	
 	bird_counter bcount(
 		.clock(cclock), 
