@@ -45,11 +45,12 @@ module duck_hunt(CLOCK_50, KEY,
 	output	[9:0]	VGA_B;   				//	VGA Blue[9:0]	
 
 	
-	wire [7:0] x_out;
+	wire [7:0] x_out,test_x;
 	wire [6:0] y_out;
 	wire frame_reached, one_frame, reset_f_counter, reset;
 	reg [2:0] colour;
 	wire [6:0] done_draw;
+	reg [6:0] reset_draw;
 	
 	assign reset = KEY[0];
 	
@@ -65,7 +66,7 @@ module duck_hunt(CLOCK_50, KEY,
 	/*
 	Control
 	*/
-	always @(posedge CLOCK_50)
+	always @(*)
 	begin
 		case(current_state)
 			HOLD: 		next_state = one_frame ? ERASE_BIRD_1 : HOLD;
@@ -91,10 +92,16 @@ module duck_hunt(CLOCK_50, KEY,
 	
 	always @(posedge CLOCK_50)
 	begin
-// 		if (posedge reset)
-// 			current_state = HOLD;
-// 		else
-			current_state <= next_state;
+		if (current_state != next_state) begin
+			case(next_state)
+				ERASE_BIRD_1: reset_draw[0] = 1;
+				DRAW_BIRD_1: reset_draw[0] = 1;
+			endcase
+		end
+		else begin
+			reset_draw = 7'b0;
+		end
+		current_state <= next_state;
 	end
 	
 	/*
@@ -124,10 +131,11 @@ module duck_hunt(CLOCK_50, KEY,
 	end
 
 	
-	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .x_out(x_out), .y_out(y_out), .done(done_draw[0]));
+	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .x_out(x_out), .y_out(y_out), .done(done_draw[0]), .test_x(test_x));
 
-//	frame_counter f15(.num(6'b001111), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
-	frame_counter f1(.num(6'b000001), .clock(CLOCK_50), .q(one_frame));
+	frame_counter fbird(.num(6'b111111), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
+
+	frame_counter f1(.num(6'b000001), .clock(CLOCK_50), .reset(1'b0), .q(one_frame));
 
 	/*
 	vga_adapter VGA(
@@ -153,18 +161,18 @@ module duck_hunt(CLOCK_50, KEY,
 		
 endmodule
 
-module bird(cclock, dclock, reset_counter, x_out, y_out, done);
+module bird(cclock, dclock, reset_counter, reset_draw, x_out, y_out, done, test_x);
 	//cclock = clock for bird_counter
 	//dclock = clock for draw_bird
-	input cclock, dclock, reset_counter;
-	output [7:0] x_out;
+	input cclock, dclock, reset_counter, reset_draw;
+	output [7:0] x_out, test_x;
 	output [6:0] y_out;
 	output done;
 
 	wire [7:0] x;
 	wire [6:0] y = 7'b0000111;
+		assign test_x = x;
 	
-
 	bird_counter bcount(
 		.clock(cclock), 
 		.reset(reset_counter), 
@@ -180,6 +188,7 @@ module bird(cclock, dclock, reset_counter, x_out, y_out, done);
 		.clock(dclock),
 		.x(x),
 		.y(y), 
+		.reset(reset_draw),
 		.x_out(x_out), 
 		.y_out(y_out),
 		.done(done));
@@ -190,6 +199,7 @@ module draw_bird(
 		input clock,
 		input [7:0] x,
 		input	[6:0] y,
+		input reset,
 		output reg [7:0] x_out,
 		output reg [6:0] y_out,
 		output done
@@ -251,6 +261,7 @@ module draw_bird(
 			BIRD_10: x_out = x - 4;
 			BIRD_11: x_out = x - 5;
 			BIRD_12: x_out = x - 5;
+			default: x_out = -1;
       endcase
 	end
 	
@@ -270,14 +281,15 @@ module draw_bird(
 			BIRD_10: y_out = y - 2;
 			BIRD_11: y_out =  y + 3;
 			BIRD_12: y_out =  y - 3;
+			default: y_out = -1;
       endcase
 	end
 	
 	always @(posedge clock)
 	begin
-//		if (reset)
-//			current_state <= BIRD_0;
-//		else
+		if (reset)
+			current_state <= BIRD_0;
+		else
 			current_state <= next_state;
 	end
 	
@@ -306,7 +318,7 @@ module frame_counter(num, clock, reset, q); // output 1 if designated number of 
 	input [5:0] num;
 	input clock;
 	input reset;
-	output reg q = 0;
+	output q;
 	
 	wire one_frame;
 	
@@ -323,13 +335,11 @@ module frame_counter(num, clock, reset, q); // output 1 if designated number of 
 	begin
 		if (one_frame)
 			temp <= temp - 1;
-		else if (temp == 0) begin
+		else if (temp == 0)
 			temp <= num;
-			q <= 1'b1;
-		end
-		else
-			q <= 1'b0;
 	end
+	
+	assign q = (temp == 0) ? 1 : 0;
 	
 endmodule
 	
