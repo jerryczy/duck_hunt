@@ -52,6 +52,7 @@ module duck_hunt(CLOCK_50, KEY,
 	wire [6:0] test_y;
 	reg [6:0] plot_y;
 	reg [2:0] colour;
+	wire erase;
 	
 	wire [4:0] current_state;
 	wire frame_reached, one_frame; 
@@ -81,10 +82,8 @@ module duck_hunt(CLOCK_50, KEY,
 	assign plot = (current_state == HOLD) ? 0 : 1;
 	
 	/*
-	Datapath (Because Verilog won't let you pass 2D arrays as input for some reason).
+	Datapath (Not a seperate module because Verilog won't let you pass 2D arrays as input for some reason).
 	*/
-
-				
 	always @(*)
 	begin
 		colour = 3'b000;
@@ -159,18 +158,19 @@ module duck_hunt(CLOCK_50, KEY,
 		endcase
 	end
 	
+	
 	/*
 	Module Instantiations
 	*/
-	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .x_out(x_out[0]), .y_out(y_out[0]), .done(done_draw[0]), .test_x(test_x), .test_y(test_y));
-	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[1]), .x_out(x_out[1]), .y_out(y_out[1]), .done(done_draw[1]));
-	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[2]), .x_out(x_out[2]), .y_out(y_out[2]), .done(done_draw[2]));
-	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[3]), .x_out(x_out[3]), .y_out(y_out[3]), .done(done_draw[3]));
-	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[4]), .x_out(x_out[4]), .y_out(y_out[4]), .done(done_draw[4]));
-	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
-	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
+	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .erase(erase), .x_out(x_out[0]), .y_out(y_out[0]), .done(done_draw[0]), .test_x(test_x), .test_y(test_y));
+	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[1]), .erase(erase), .x_out(x_out[1]), .y_out(y_out[1]), .done(done_draw[1]));
+	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[2]), .erase(erase), .x_out(x_out[2]), .y_out(y_out[2]), .done(done_draw[2]));
+	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[3]), .erase(erase), .x_out(x_out[3]), .y_out(y_out[3]), .done(done_draw[3]));
+	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[4]), .erase(erase), .x_out(x_out[4]), .y_out(y_out[4]), .done(done_draw[4]));
+	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .erase(erase), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
+	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
 	
-	draw_control dc(.clock(CLOCK_50), .done_draw(done_draw), .one_frame(one_frame),  .reset(reset), .reset_draw(reset_draw), .current_state(current_state));
+	draw_control dc(.clock(CLOCK_50), .done_draw(done_draw), .one_frame(one_frame),  .reset(reset), .reset_draw(reset_draw), .current_state(current_state), .erase(erase));
 	
 	frame_counter fbird(.num(6'b111111), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
 	rate_divider f1(.clock(CLOCK_50), .reset(1'b0), .one_frame(one_frame));
@@ -199,10 +199,11 @@ module duck_hunt(CLOCK_50, KEY,
 		
 endmodule
 
-module draw_control(clock, done_draw, one_frame, reset, reset_draw, current_state);
+module draw_control(clock, done_draw, one_frame, reset, reset_draw, current_state, erase);
 	input clock, reset, one_frame;
 	input [6:0] done_draw;
 	output reg [6:0] reset_draw = 7'b0;
+	output reg erase = 0;
 	
 	localparam 	HOLD = 5'd0,
 				ERASE_BIRD_0 = 5'd1,
@@ -222,25 +223,26 @@ module draw_control(clock, done_draw, one_frame, reset, reset_draw, current_stat
 				
 	output reg [4:0] current_state = HOLD;
 	reg [4:0] next_state;
-		
+	
+
 	always @(*)
 	begin
 		case(current_state)
-			HOLD: next_state = one_frame ? ERASE_BIRD_0 : HOLD;
-			ERASE_BIRD_0: next_state = done_draw[0] ? DRAW_BIRD_0 : ERASE_BIRD_0;
-			DRAW_BIRD_0: next_state = done_draw[0] ? ERASE_BIRD_1 : DRAW_BIRD_0;
+			HOLD: 			next_state = one_frame ? ERASE_BIRD_0 : HOLD;
+			ERASE_BIRD_0: 	next_state = done_draw[0] ? DRAW_BIRD_0 : ERASE_BIRD_0;
+			DRAW_BIRD_0: 	next_state = done_draw[0] ? ERASE_BIRD_1 : DRAW_BIRD_0;
 			ERASE_BIRD_1: 	next_state = done_draw[1] ? DRAW_BIRD_1 : ERASE_BIRD_1;
-			DRAW_BIRD_1:	next_state = done_draw[1] ? ERASE_BIRD_2 : DRAW_BIRD_1;
-			ERASE_BIRD_2: next_state = done_draw[2] ? DRAW_BIRD_2 : ERASE_BIRD_2;
-			DRAW_BIRD_2: next_state = done_draw[2] ? ERASE_BIRD_3 : DRAW_BIRD_2;
-			ERASE_BIRD_3: next_state = done_draw[3] ? DRAW_BIRD_3 : ERASE_BIRD_3;
-			DRAW_BIRD_3: next_state = done_draw[3] ? ERASE_BIRD_4 : DRAW_BIRD_3;
-			ERASE_BIRD_4: next_state = done_draw[4] ? DRAW_BIRD_4 : ERASE_BIRD_4;
-			DRAW_BIRD_4: next_state = done_draw[4] ? ERASE_BIRD_5 : DRAW_BIRD_4;
-			ERASE_BIRD_5: next_state = done_draw[5] ? DRAW_BIRD_5 : ERASE_BIRD_5;
-			DRAW_BIRD_5: next_state = done_draw[5] ? ERASE_BIRD_6 : DRAW_BIRD_5;
-			ERASE_BIRD_6: next_state = done_draw[6] ? DRAW_BIRD_6 : ERASE_BIRD_6;
-			DRAW_BIRD_6: next_state = done_draw[6] ? HOLD : DRAW_BIRD_6;
+			DRAW_BIRD_1: 	next_state = done_draw[1] ? ERASE_BIRD_2 : DRAW_BIRD_1;
+			ERASE_BIRD_2: 	next_state = done_draw[2] ? DRAW_BIRD_2 : ERASE_BIRD_2;
+			DRAW_BIRD_2: 	next_state = done_draw[2] ? ERASE_BIRD_3 : DRAW_BIRD_2;
+			ERASE_BIRD_3: 	next_state = done_draw[3] ? DRAW_BIRD_3 : ERASE_BIRD_3;
+			DRAW_BIRD_3: 	next_state = done_draw[3] ? ERASE_BIRD_4 : DRAW_BIRD_3;
+			ERASE_BIRD_4: 	next_state = done_draw[4] ? DRAW_BIRD_4 : ERASE_BIRD_4;
+			DRAW_BIRD_4: 	next_state = done_draw[4] ? ERASE_BIRD_5 : DRAW_BIRD_4;
+			ERASE_BIRD_5: 	next_state = done_draw[5] ? DRAW_BIRD_5 : ERASE_BIRD_5;
+			DRAW_BIRD_5: 	next_state = done_draw[5] ? ERASE_BIRD_6 : DRAW_BIRD_5;
+			ERASE_BIRD_6: 	next_state = done_draw[6] ? DRAW_BIRD_6 : ERASE_BIRD_6;
+			DRAW_BIRD_6: 	next_state = done_draw[6] ? HOLD : DRAW_BIRD_6;
 			
 // 			ERASE_HUNTER: next_state = done_draw_h ? DRAW_HUNTER : ERASE_HUNTER;
 // 			DRAW_HUNTER: next_state = done_draw_h ? (shoot ? DRAW_LASER : HOLD) : DRAW_HUNTER;
@@ -250,24 +252,39 @@ module draw_control(clock, done_draw, one_frame, reset, reset_draw, current_stat
 		endcase
 	end
 	
+	always @(*)
+	begin
+		case (current_state)
+			ERASE_BIRD_0: erase = 1;
+			ERASE_BIRD_1: erase = 1;
+			ERASE_BIRD_2: erase = 1;
+			ERASE_BIRD_3: erase = 1;
+			ERASE_BIRD_4: erase = 1;
+			ERASE_BIRD_5: erase = 1;
+			ERASE_BIRD_6: erase = 1;
+			default: erase = 0;
+		endcase
+	end
+	
 	always @(posedge clock)
 	begin
 		if (current_state != next_state) begin
 			case(next_state)
-				ERASE_BIRD_0: reset_draw[0] = 1;
-				DRAW_BIRD_0: reset_draw[0] = 1;
-				ERASE_BIRD_1: reset_draw[1] = 1;
-				DRAW_BIRD_1: reset_draw[1] = 1;
-				ERASE_BIRD_2: reset_draw[2] = 1;
-				DRAW_BIRD_2: reset_draw[2] = 1;
-				ERASE_BIRD_3: reset_draw[3] = 1;
-				DRAW_BIRD_3: reset_draw[3] = 1;
-				ERASE_BIRD_4: reset_draw[4] = 1;
-				DRAW_BIRD_4: reset_draw[4] = 1;
-				ERASE_BIRD_5: reset_draw[5] = 1;
-				DRAW_BIRD_5: reset_draw[5] = 1;
-				ERASE_BIRD_6: reset_draw[6] = 1;
-				DRAW_BIRD_6: reset_draw[6] = 1;
+				ERASE_BIRD_0: 	reset_draw[0] = 1;
+				DRAW_BIRD_0: 	reset_draw[0] = 1;
+				ERASE_BIRD_1:	reset_draw[1] = 1;
+				DRAW_BIRD_1: 	reset_draw[1] = 1;
+				ERASE_BIRD_2: 	reset_draw[2] = 1;
+				DRAW_BIRD_2: 	reset_draw[2] = 1;
+				ERASE_BIRD_3: 	reset_draw[3] = 1;
+				DRAW_BIRD_3: 	reset_draw[3] = 1;
+				ERASE_BIRD_4: 	reset_draw[4] = 1;
+				DRAW_BIRD_4: 	reset_draw[4] = 1;
+				ERASE_BIRD_5: 	reset_draw[5] = 1;
+				DRAW_BIRD_5:	reset_draw[5] = 1;
+				ERASE_BIRD_6:	reset_draw[6] = 1;
+				DRAW_BIRD_6:	reset_draw[6] = 1;
+				default:		reset_draw = 7'b0;
 			endcase
 		end
 		else begin
@@ -277,15 +294,69 @@ module draw_control(clock, done_draw, one_frame, reset, reset_draw, current_stat
 	end
 endmodule
 
-module bird(cclock, dclock, reset_counter, reset_draw, x_out, y_out, done, test_x, test_y);
+/*
+Control for number of birds/speed.
+*/
+module bird_control(clock, reset, bird_on, move_freq);
+	input clock, reset;
+	output reg [6:0] bird_on = 7'b0000001;
+	output reg [3:0] move_freq = 12;
+	
+	reg [9:0] seconds = 0;
+	
+	frame_counter f60(.num(60), .clock(clock), .reset(0), .q(q)); 
+	
+	always@(posedge clock)
+	begin
+		if (reset)
+			seconds <= 0;
+		else if (q)
+			seconds <= seconds + 1;
+	end
+	
+	always@(posedge clock)
+	begin
+		if (seconds <= 5) begin
+			bird_on <= 7'b0000001;
+			move_freq <= 12;
+		end
+		else if (seconds <= 10) begin
+			bird_on <= 7'b0000011;
+			move_freq <= 12;
+		end
+		else if (seconds <= 15) begin
+			bird_on <= 7'b0000111;
+			move_freq <= 9;
+		end
+		else if (seconds <= 20) begin
+			bird_on <= 7'b0001111;
+			move_freq <= 9;
+		end
+		else if (seconds <= 25) begin
+			bird_on <= 7'b0011111;
+			move_freq <= 6;
+		end
+		else if (seconds <= 30) begin
+			bird_on <= 7'b0111111;
+			move_freq <= 3;
+		end
+		else begin
+			bird_on <= 7'b1111111;
+			move_freq <= 1;
+		end
+	end
+endmodule
+
+module bird(cclock, dclock, reset_counter, reset_draw, erase, x_out, y_out, done, test_x, test_y);
 	//cclock = clock for bird_counter
 	//dclock = clock for draw_bird
-	input cclock, dclock, reset_counter, reset_draw;
+	input cclock, dclock, reset_counter, reset_draw, erase;
 	output [7:0] x_out, test_x;
 	output [6:0] y_out, test_y;
 	output done;
 
 	wire [7:0] x;
+	reg [7:0] draw_x;
 	wire [6:0] y = $urandom%110 + 10;
 		assign test_x = x;
 		assign test_y = y;
@@ -300,10 +371,18 @@ module bird(cclock, dclock, reset_counter, reset_draw, x_out, y_out, done, test_
 //		.clock(dclock),
 //		.reset(reset),
 //		.y(y));
+
+	always @(*)
+	begin
+		case (erase)
+			1'b0: draw_x = x;
+			1'b1: draw_x = x - 1;
+		endcase
+	end
 	
 	draw_bird d1(
 		.clock(dclock),
-		.x(x),
+		.x(draw_x),
 		.y(y), 
 		.reset(reset_draw),
 		.x_out(x_out), 
@@ -452,11 +531,10 @@ module frame_counter(num, clock, reset, q); // output 1 if designated number of 
 		if (one_frame)
 			temp <= temp - 1;
 		else if (temp == 0)
-			temp <= num;
+			temp <= num - 1;
 	end
 	
 	assign q = (temp == 0) ? 1 : 0;
-	
 endmodule
 	
 module rate_divider(clock, reset, one_frame); //Goes high every 60th of a second.
@@ -474,7 +552,7 @@ module rate_divider(clock, reset, one_frame); //Goes high every 60th of a second
 		else
 			begin
 				if (q == 0)
-					q <= 2'b11; //20'b11001011011100110110;//(1/60s)
+					q <= 2'b11 - 1; //20'b11001011011100110110;//(1/60s)
 				else
 					q <= q - 1'b1;
 			end
