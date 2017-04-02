@@ -56,7 +56,7 @@ module duck_hunt(CLOCK_50, KEY,
 	
 	wire [4:0] current_state;
 	wire frame_reached, one_frame;
-	wire move_freq;
+	wire [3:0] move_freq;
 	wire [6:0] bird_on; 
 
 	wire [6:0] done_draw;
@@ -172,7 +172,7 @@ module duck_hunt(CLOCK_50, KEY,
 	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .erase(erase), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
 	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
 	
-	draw_control dc(.clock(CLOCK_50), .done_draw(done_draw), .one_frame(one_frame),  .reset(reset), .reset_draw(reset_draw), .current_state(current_state), .erase(erase));
+	draw_control dc(.clock(CLOCK_50), .done_draw(done_draw), .bird_on(bird_on), .one_frame(one_frame),  .reset(reset), .reset_draw(reset_draw), .current_state(current_state), .erase(erase));
 	bird_control bc(.clock(CLOCK_50), .reset(reset), .bird_on(bird_on), .move_freq(move_freq));
 	
 	frame_counter fbird(.num(6'b111111), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
@@ -202,9 +202,9 @@ module duck_hunt(CLOCK_50, KEY,
 		
 endmodule
 
-module draw_control(clock, done_draw, one_frame, reset, reset_draw, current_state, erase);
+module draw_control(clock, done_draw, bird_on, one_frame, reset, reset_draw, current_state, erase);
 	input clock, reset, one_frame;
-	input [6:0] done_draw;
+	input [6:0] done_draw, bird_on;
 	output reg [6:0] reset_draw = 7'b0;
 	output reg erase = 0;
 	
@@ -232,19 +232,19 @@ module draw_control(clock, done_draw, one_frame, reset, reset_draw, current_stat
 	begin
 		case(current_state)
 			HOLD: 			next_state = one_frame ? ERASE_BIRD_0 : HOLD;
-			ERASE_BIRD_0: 	next_state = done_draw[0] ? DRAW_BIRD_0 : ERASE_BIRD_0;
+			ERASE_BIRD_0: 	next_state = done_draw[0] ? (bird_on[0] ? DRAW_BIRD_0 : ERASE_BIRD_1) : ERASE_BIRD_0;
 			DRAW_BIRD_0: 	next_state = done_draw[0] ? ERASE_BIRD_1 : DRAW_BIRD_0;
-			ERASE_BIRD_1: 	next_state = done_draw[1] ? DRAW_BIRD_1 : ERASE_BIRD_1;
+			ERASE_BIRD_1: 	next_state = done_draw[1] ? (bird_on[1] ? DRAW_BIRD_1 : ERASE_BIRD_2) : DRAW_BIRD_1 : ERASE_BIRD_1;
 			DRAW_BIRD_1: 	next_state = done_draw[1] ? ERASE_BIRD_2 : DRAW_BIRD_1;
-			ERASE_BIRD_2: 	next_state = done_draw[2] ? DRAW_BIRD_2 : ERASE_BIRD_2;
+			ERASE_BIRD_2: 	next_state = done_draw[2] ? (bird_on[2] ? DRAW_BIRD_2 : ERASE_BIRD_3) : DRAW_BIRD_2 : ERASE_BIRD_2;
 			DRAW_BIRD_2: 	next_state = done_draw[2] ? ERASE_BIRD_3 : DRAW_BIRD_2;
-			ERASE_BIRD_3: 	next_state = done_draw[3] ? DRAW_BIRD_3 : ERASE_BIRD_3;
+			ERASE_BIRD_3: 	next_state = done_draw[3] ? (bird_on[3] ? DRAW_BIRD_3 : ERASE_BIRD_4) : DRAW_BIRD_3 : ERASE_BIRD_3;
 			DRAW_BIRD_3: 	next_state = done_draw[3] ? ERASE_BIRD_4 : DRAW_BIRD_3;
-			ERASE_BIRD_4: 	next_state = done_draw[4] ? DRAW_BIRD_4 : ERASE_BIRD_4;
+			ERASE_BIRD_4: 	next_state = done_draw[4] ? (bird_on[4] ? DRAW_BIRD_4 : ERASE_BIRD_5) : DRAW_BIRD_4 : ERASE_BIRD_4;
 			DRAW_BIRD_4: 	next_state = done_draw[4] ? ERASE_BIRD_5 : DRAW_BIRD_4;
-			ERASE_BIRD_5: 	next_state = done_draw[5] ? DRAW_BIRD_5 : ERASE_BIRD_5;
+			ERASE_BIRD_5: 	next_state = done_draw[5] ? (bird_on[5] ? DRAW_BIRD_5 : ERASE_BIRD_6) : DRAW_BIRD_5 : ERASE_BIRD_5;
 			DRAW_BIRD_5: 	next_state = done_draw[5] ? ERASE_BIRD_6 : DRAW_BIRD_5;
-			ERASE_BIRD_6: 	next_state = done_draw[6] ? DRAW_BIRD_6 : ERASE_BIRD_6;
+			ERASE_BIRD_6: 	next_state = done_draw[6] ? (bird_on[6] ? DRAW_BIRD_6 : ERASE_BIRD_7) : DRAW_BIRD_6 : ERASE_BIRD_6;
 			DRAW_BIRD_6: 	next_state = done_draw[6] ? HOLD : DRAW_BIRD_6;
 			
 // 			ERASE_HUNTER: next_state = done_draw_h ? DRAW_HUNTER : ERASE_HUNTER;
@@ -307,7 +307,7 @@ module bird_control(clock, reset, bird_on, move_freq);
 	
 	reg [9:0] seconds = 0;
 	
-	frame_counter f60(.num(60), .clock(clock), .reset(0), .q(q)); 
+	frame_counter f60(.num(6'd60), .clock(clock), .reset(1'b0), .q(q)); 
 	
 	always@(posedge clock)
 	begin
