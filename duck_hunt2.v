@@ -175,7 +175,7 @@ module duck_hunt(CLOCK_50, KEY,
 	draw_control dc(.clock(CLOCK_50), .done_draw(done_draw), .bird_on(bird_on), .one_frame(one_frame),  .reset(reset), .reset_draw(reset_draw), .current_state(current_state), .erase(erase));
 	bird_control bc(.clock(CLOCK_50), .reset(reset), .bird_on(bird_on), .move_freq(move_freq));
 	
-	frame_counter fbird(.num(6'b111111), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
+	frame_counter fbird(.num(6'b111111/*move_freq*/), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
 	rate_divider f1(.clock(CLOCK_50), .reset(1'b0), .one_frame(one_frame));
 
 	/*
@@ -273,20 +273,20 @@ module draw_control(clock, done_draw, bird_on, one_frame, reset, reset_draw, cur
 	begin
 		if (current_state != next_state) begin
 			case(next_state)
-				ERASE_BIRD_0: 	reset_draw[0] = 1;
-				DRAW_BIRD_0: 	reset_draw[0] = 1;
-				ERASE_BIRD_1:	reset_draw[1] = 1;
-				DRAW_BIRD_1: 	reset_draw[1] = 1;
-				ERASE_BIRD_2: 	reset_draw[2] = 1;
-				DRAW_BIRD_2: 	reset_draw[2] = 1;
-				ERASE_BIRD_3: 	reset_draw[3] = 1;
-				DRAW_BIRD_3: 	reset_draw[3] = 1;
-				ERASE_BIRD_4: 	reset_draw[4] = 1;
-				DRAW_BIRD_4: 	reset_draw[4] = 1;
-				ERASE_BIRD_5: 	reset_draw[5] = 1;
-				DRAW_BIRD_5:	reset_draw[5] = 1;
-				ERASE_BIRD_6:	reset_draw[6] = 1;
-				DRAW_BIRD_6:	reset_draw[6] = 1;
+				ERASE_BIRD_0: 	reset_draw[0] = 1 & bird_on[0];
+				DRAW_BIRD_0: 	reset_draw[0] = 1 & bird_on[0];
+				ERASE_BIRD_1:	reset_draw[1] = 1 & bird_on[1];
+				DRAW_BIRD_1: 	reset_draw[1] = 1 & bird_on[1];
+				ERASE_BIRD_2: 	reset_draw[2] = 1 & bird_on[2];
+				DRAW_BIRD_2: 	reset_draw[2] = 1 & bird_on[2];
+				ERASE_BIRD_3: 	reset_draw[3] = 1 & bird_on[3];
+				DRAW_BIRD_3: 	reset_draw[3] = 1 & bird_on[3];
+				ERASE_BIRD_4: 	reset_draw[4] = 1 & bird_on[4];
+				DRAW_BIRD_4: 	reset_draw[4] = 1 & bird_on[4];
+				ERASE_BIRD_5: 	reset_draw[5] = 1 & bird_on[5];
+				DRAW_BIRD_5:	reset_draw[5] = 1 & bird_on[5];
+				ERASE_BIRD_6:	reset_draw[6] = 1 & bird_on[6];
+				DRAW_BIRD_6:	reset_draw[6] = 1 & bird_on[6];
 				default:		reset_draw = 7'b0;
 			endcase
 		end
