@@ -55,7 +55,9 @@ module duck_hunt(CLOCK_50, KEY,
 	wire erase;
 	
 	wire [4:0] current_state;
-	wire frame_reached, one_frame; 
+	wire frame_reached, one_frame;
+	wire move_freq;
+	wire [6:0] bird_on; 
 
 	wire [6:0] done_draw;
 	wire [6:0] reset_draw;
@@ -171,6 +173,7 @@ module duck_hunt(CLOCK_50, KEY,
 	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
 	
 	draw_control dc(.clock(CLOCK_50), .done_draw(done_draw), .one_frame(one_frame),  .reset(reset), .reset_draw(reset_draw), .current_state(current_state), .erase(erase));
+	bird_control bc(.clock(CLOCK_50), .reset(reset), .bird_on(bird_on), .move_freq(move_freq));
 	
 	frame_counter fbird(.num(6'b111111), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
 	rate_divider f1(.clock(CLOCK_50), .reset(1'b0), .one_frame(one_frame));
