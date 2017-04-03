@@ -84,7 +84,7 @@ module duck_hunt(CLOCK_50, KEY,
 	assign plot = (current_state == HOLD) ? 0 : 1;
 	
 	/*
-	Datapath (Not a seperate module because Verilog won't let you pass 2D arrays as input for some reason).
+	Datapath (Not a separate module because Verilog won't let you pass 2D arrays as input for some reason).
 	*/
 	always @(*)
 	begin
@@ -164,13 +164,13 @@ module duck_hunt(CLOCK_50, KEY,
 	/*
 	Module Instantiations
 	*/
-	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .erase(erase), .x_out(x_out[0]), .y_out(y_out[0]), .done(done_draw[0]), .test_x(test_x), .test_y(test_y));
-	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[1]), .erase(erase), .x_out(x_out[1]), .y_out(y_out[1]), .done(done_draw[1]));
-	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[2]), .erase(erase), .x_out(x_out[2]), .y_out(y_out[2]), .done(done_draw[2]));
-	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[3]), .erase(erase), .x_out(x_out[3]), .y_out(y_out[3]), .done(done_draw[3]));
-	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[4]), .erase(erase), .x_out(x_out[4]), .y_out(y_out[4]), .done(done_draw[4]));
-	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .erase(erase), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
-	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
+	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[0]), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .erase(erase), .x_out(x_out[0]), .y_out(y_out[0]), .done(done_draw[0]), .test_x(test_x), .test_y(test_y));
+	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[1]), .reset_counter(1'b0), .reset_draw(reset_draw[1]), .erase(erase), .x_out(x_out[1]), .y_out(y_out[1]), .done(done_draw[1]));
+	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[2]), .reset_counter(1'b0), .reset_draw(reset_draw[2]), .erase(erase), .x_out(x_out[2]), .y_out(y_out[2]), .done(done_draw[2]));
+	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[3]), .reset_counter(1'b0), .reset_draw(reset_draw[3]), .erase(erase), .x_out(x_out[3]), .y_out(y_out[3]), .done(done_draw[3]));
+	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[4]), .reset_counter(1'b0), .reset_draw(reset_draw[4]), .erase(erase), .x_out(x_out[4]), .y_out(y_out[4]), .done(done_draw[4]));
+	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[5]), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .erase(erase), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
+	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[6]), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
 	
 	draw_control dc(.clock(CLOCK_50), .one_frame(one_frame), .done_draw(done_draw), .reset(reset), .bird_on(bird_on), .reset_draw(reset_draw), .current_state(current_state), .erase(erase));
 	bird_control bc(.clock(CLOCK_50), .reset(reset), .bird_on(bird_on), .move_freq(move_freq));
@@ -350,10 +350,12 @@ module bird_control(clock, reset, bird_on, move_freq);
 	end
 endmodule
 
-module bird(cclock, dclock, reset_counter, reset_draw, erase, x_out, y_out, done, test_x, test_y);
+module bird(cclock, dclock, bird_on, reset_counter, reset_draw, erase, x_out, y_out, done, test_x, test_y);
 	//cclock = clock for bird_counter
 	//dclock = clock for draw_bird
-	input cclock, dclock, reset_counter, reset_draw, erase;
+	input cclock, dclock;
+	input reset_counter, reset_draw;
+	input erase, bird_on;
 	output [7:0] x_out, test_x;
 	output [6:0] y_out, test_y;
 	output done;
@@ -361,13 +363,13 @@ module bird(cclock, dclock, reset_counter, reset_draw, erase, x_out, y_out, done
 	wire [7:0] x;
 	reg [7:0] draw_x;
 	wire [6:0] y = $urandom%110 + 10;
-		assign test_x = x;
-		assign test_y = y;
+	assign test_x = x;
+	assign test_y = y;
 	
 	bird_counter bcount(
 		.clock(cclock), 
 		.reset(reset_counter), 
-		.enable(1'b1), 
+		.enable(bird_on), 
 		.new_x(x));
 		
 //	random num1(
@@ -403,51 +405,63 @@ module draw_bird(
 		output done
 		);
 		
-	localparam  	BIRD_0  = 4'b0000,//body 1
-					BIRD_1  = 4'b0001,//head
-					BIRD_2  = 4'b0010,//body 2
-					BIRD_3  = 4'b0011,//body 3
-					BIRD_4  = 4'b0100,//body 4
-					BIRD_5  = 4'b0101,//body 5
-					BIRD_6  = 4'b0110,//body 6
-					BIRD_7  = 4'b0111,//up wing 1
-					BIRD_8  = 4'b1000,//down wing 1
-					BIRD_9  = 4'b1001,//up wing 2
-					BIRD_10 = 4'b1010,//down wing 2
-					BIRD_11 = 4'b1011,//up wing 3
-					BIRD_12 = 4'b1100,//down wing 3
-					END     = 4'b1111;
+	localparam  BIRD_0  = 4'b0000,//body 1
+				BIRD_1  = 4'b0001,//head
+				BIRD_2  = 4'b0010,//body 2
+				BIRD_3  = 4'b0011,//body 3
+				BIRD_4  = 4'b0100,//body 4
+				BIRD_5  = 4'b0101,//body 5
+				BIRD_6  = 4'b0110,//body 6
+				BIRD_7  = 4'b0111,//up wing 1
+				BIRD_8  = 4'b1000,//down wing 1
+				BIRD_9  = 4'b1001,//up wing 2
+				BIRD_10 = 4'b1010,//down wing 2
+				BIRD_11 = 4'b1011,//up wing 3
+				BIRD_12 = 4'b1100,//down wing 3
+				END     = 4'b1111;
 					
 	reg [3:0] current_state = END;
 	reg [3:0] next_state;
 		
-					
+    /*
+	x from right
+	y from centre
+	
+	x
+     x
+      x
+    xxxxxx
+      x  x
+     x
+    x
+	
+	*/	
 	always@(*)
 	begin
-			case (current_state)
-				BIRD_0: next_state = BIRD_1;
-				BIRD_1: next_state = BIRD_2;
-				BIRD_2: next_state = BIRD_3;
-				BIRD_3: next_state = BIRD_4;
-				BIRD_4: next_state = BIRD_5;
-				BIRD_5: next_state = BIRD_6;
-				BIRD_6: next_state = BIRD_7;
-				BIRD_7: next_state = BIRD_8;
-				BIRD_8: next_state = BIRD_9;
-				BIRD_9: next_state = BIRD_10;
-				BIRD_10: next_state = BIRD_11;
-				BIRD_11: next_state = BIRD_12;
-				BIRD_12: next_state = END;
-				END: next_state = END;
-				default: next_state = END;
-			endcase
+		case (current_state)
+			BIRD_0: next_state = BIRD_1;
+			BIRD_1: next_state = BIRD_2;
+			BIRD_2: next_state = BIRD_3;
+			BIRD_3: next_state = BIRD_4;
+			BIRD_4: next_state = BIRD_5;
+			BIRD_5: next_state = BIRD_6;
+			BIRD_6: next_state = BIRD_7;
+			BIRD_7: next_state = BIRD_8;
+			BIRD_8: next_state = BIRD_9;
+			BIRD_9: next_state = BIRD_10;
+			BIRD_10: next_state = BIRD_11;
+			BIRD_11: next_state = BIRD_12;
+			BIRD_12: next_state = END;
+			END: next_state = END;
+			default: next_state = END;
+		endcase
 	end
 		
 	always @(*)
 	begin // set x
 		case (current_state)
-			BIRD_0: x_out = x ;
-			BIRD_1: x_out =  x ;
+			BIRD_0: x_out = x;
+			BIRD_1: x_out =  x;
 			BIRD_2: x_out = x - 1;
 			BIRD_3: x_out = x - 2;
 			BIRD_4: x_out =  x - 3;
@@ -511,20 +525,171 @@ module bird_counter(clock, reset, enable, new_x);
 	end
 endmodule
 
-module hunter(clock, plot_x, plot_y);
+
+module hunter(clock, DIRECTIONS_FROM_KEYBOARD, plot_x, plot_y);
 	input clock;
+	input DIRECTIONS_FROM_KEYBOARD;
 	output [7:0] plot_x;
 	output [6:0] plot_y;
 	
-	reg [7:0] x;
-	reg [6:0] y;
+	reg [7:0] x = 75;
+	wire [6:0] y = 115;
+	
+	draw_hunter dh(.clock(clock), .x(x), .y(y), .plot_x(plot_x), .plot_y(plot_y)); 
 endmodule
 
-module draw_hunter(clock, plot_x, plot_y);
+
+module draw_hunter(clock, reset, x, y, plot_x, plot_y, done);
+	input clock, reset;
+	input [7:0] x; 
+	output [6:0] y;
+	output reg [7:0] plot_x;
+	output reg [6:0] plot_y;
+	output done;
+	
+	reg [4:0] current_state = END;
+	reg [4:0] next_state;
+	
+	/*
+	x from centre
+  	y from top
+	draws left to right, top to bottom
+	
+	  xxx
+	  xxx
+	xxxxxxx
+	xxxxxxx
+	x     x	
+	
+	*/
+	
+	localparam	DRAW_0 = 5'd0,
+				DRAW_1 = 5'd1,
+				DRAW_2 = 5'd2,
+				DRAW_3 = 5'd3,
+				DRAW_4 = 5'd4,
+				DRAW_5 = 5'd5,
+				DRAW_6 = 5'd6,
+				DRAW_7 = 5'd7,
+				DRAW_8 = 5'd8,
+				DRAW_9 = 5'd9,
+				DRAW_10 = 5'd10,
+				DRAW_11 = 5'd11,
+				DRAW_12 = 5'd12,
+				DRAW_13 = 5'd13,
+				DRAW_14 = 5'd14,
+				DRAW_15 = 5'd15,
+				DRAW_16 = 5'd16,
+				DRAW_17 = 5'd17,
+				DRAW_18 = 5'd18,
+				DRAW_19 = 5'd19,
+				DRAW_20 = 5'd20,
+				DRAW_21 = 5'd21,
+				END = 5'd23;
+				
+	always @(*)
+	begin
+		case (current_state)
+				DRAW_0: next_state = DRAW_1;
+				DRAW_1: next_state = DRAW_2;
+				DRAW_2: next_state = DRAW_3;
+				DRAW_3: next_state = DRAW_4;
+				DRAW_4: next_state = DRAW_5;
+				DRAW_5: next_state = DRAW_6;
+				DRAW_6: next_state = DRAW_7;
+				DRAW_7: next_state = DRAW_8;
+				DRAW_8: next_state = DRAW_9;
+				DRAW_9: next_state = DRAW_10;
+				DRAW_10: next_state = DRAW_11;
+				DRAW_11: next_state = DRAW_12;
+				DRAW_12: next_state = DRAW_13;
+				DRAW_13: next_state = DRAW_14;
+				DRAW_14: next_state = DRAW_15;
+				DRAW_15: next_state = DRAW_16;
+				DRAW_16: next_state = DRAW_17;
+				DRAW_17: next_state = DRAW_18;
+				DRAW_18: next_state = DRAW_19;
+				DRAW_19: next_state = DRAW_20;
+				DRAW_20: next_state = DRAW_21;
+				DRAW_21: next_state = END;
+				default: next_state = END;
+		endcase
+	end
+			
+	always @(*)
+	begin
+		case (current_state)
+				DRAW_0: plot_x = x - 1;
+				DRAW_1: plot_x = x;
+				DRAW_2: plot_x = x + 1;
+				DRAW_3: plot_x = x - 1;
+				DRAW_4: plot_x = x;
+				DRAW_5: plot_x = x + 1;
+				DRAW_6: plot_x = x - 3;
+				DRAW_7: plot_x = x - 2;
+				DRAW_8: plot_x = x - 1;
+				DRAW_9: plot_x = x;
+				DRAW_10: plot_x = x + 1;
+				DRAW_11: plot_x = x + 2;
+				DRAW_12: plot_x = x + 3;
+				DRAW_13: plot_x = x - 3;
+				DRAW_14: plot_x = x - 2;
+				DRAW_15: plot_x = x - 1;
+				DRAW_16: plot_x = x;
+				DRAW_17: plot_x = x + 1;
+				DRAW_18: plot_x = x + 2;
+				DRAW_19: plot_x = x + 3;
+				DRAW_20: plot_x = x - 3;
+				DRAW_21: plot_x = x + 3;
+		endcase
+	end
+	
+	always @(*)
+	begin
+		case (current_state)
+				DRAW_0: plot_y = y;
+				DRAW_1: plot_y = y;  
+				DRAW_2: plot_y = y;
+				DRAW_3: plot_y = y + 1;
+				DRAW_4: plot_y = y + 1;
+				DRAW_5: plot_y = y + 1;
+				DRAW_6: plot_y = y + 2;
+				DRAW_7: plot_y = y + 2;
+				DRAW_8: plot_y = y + 2;
+				DRAW_9: plot_y = y + 2;
+				DRAW_10: plot_y = y + 2;
+				DRAW_11: plot_y = y + 2;
+				DRAW_12: plot_y = y + 2;
+				DRAW_13: plot_y = y + 3;
+				DRAW_14: plot_y = y + 3;
+				DRAW_15: plot_y = y + 3;
+				DRAW_16: plot_y = y + 3;
+				DRAW_17: plot_y = y + 3;
+				DRAW_18: plot_y = y + 3;
+				DRAW_19: plot_y = y + 3;
+				DRAW_20: plot_y = y + 4;
+				DRAW_21: plot_y = y + 4;
+		endcase
+	end
+	
+	always @(posedge clock)
+	begin
+		if (reset)
+			current_state <= DRAW_0;
+		else
+			current_state <= next_state;
+	end
+	
+	assign done = (current_state == END && ~reset) ? 1 : 0;
+endmodule
+
+
+module draw_laser(clock, plot_x, plot_y);
 	input clock;
 	output [7:0] plot_x;
 	output [6:0] plot_y;
 endmodule
+
 
 module frame_counter(num, clock, reset, q); // output 1 if designated number of frames reached.
 	input [5:0] num;
@@ -535,7 +700,6 @@ module frame_counter(num, clock, reset, q); // output 1 if designated number of 
 	wire one_frame;
 	
 	reg [5:0] temp = 0;
-	
 	
 	rate_divider hz60(
 		.clock(clock),
@@ -553,6 +717,7 @@ module frame_counter(num, clock, reset, q); // output 1 if designated number of 
 	
 	assign q = (temp == 0) ? 1 : 0;
 endmodule
+	
 	
 module rate_divider(clock, reset, one_frame); //Goes high every 60th of a second.
 	input clock;
@@ -575,7 +740,5 @@ module rate_divider(clock, reset, one_frame); //Goes high every 60th of a second
 			end
 	end
 	
-	assign one_frame = (q == 20'b00000000000000000000) ? 1 : 0;
+	assign one_frame = (q == 0) ? 1 : 0;
 endmodule
-
-		
