@@ -492,7 +492,6 @@ module draw_bird(
 	end
 	
 	assign done = (current_state == END && ~reset) ? 1 : 0;
-	
 endmodule
 
 module bird_counter(clock, reset, enable, new_x);
@@ -510,6 +509,21 @@ module bird_counter(clock, reset, enable, new_x);
     else if (enable)
 		counter <= counter + 1'b1;
 	end
+endmodule
+
+module hunter(clock, plot_x, plot_y);
+	input clock;
+	output [7:0] plot_x;
+	output [6:0] plot_y;
+	
+	reg [7:0] x;
+	reg [6:0] y;
+endmodule
+
+module draw_hunter(clock, plot_x, plot_y);
+	input clock;
+	output [7:0] plot_x;
+	output [6:0] plot_y;
 endmodule
 
 module frame_counter(num, clock, reset, q); // output 1 if designated number of frames reached.
