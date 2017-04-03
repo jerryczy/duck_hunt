@@ -199,13 +199,13 @@ module duck_hunt(CLOCK_50, KEY,
 	/*
 	Module Instantiations
 	*/
-	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[0]), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .erase(erase), .x_out(x_out[0]), .y_out(y_out[0]), .done(done_draw[0]));
-	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[1]), .reset_counter(1'b0), .reset_draw(reset_draw[1]), .erase(erase), .x_out(x_out[1]), .y_out(y_out[1]), .done(done_draw[1]));
-	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[2]), .reset_counter(1'b0), .reset_draw(reset_draw[2]), .erase(erase), .x_out(x_out[2]), .y_out(y_out[2]), .done(done_draw[2]));
-	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[3]), .reset_counter(1'b0), .reset_draw(reset_draw[3]), .erase(erase), .x_out(x_out[3]), .y_out(y_out[3]), .done(done_draw[3]));
-	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[4]), .reset_counter(1'b0), .reset_draw(reset_draw[4]), .erase(erase), .x_out(x_out[4]), .y_out(y_out[4]), .done(done_draw[4]));
-	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[5]), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .erase(erase), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
-	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[6]), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
+	bird b0(.cclock(frame_reached), .dclock(CLOCK_50), .y(7'd10), .bird_on(bird_on[0]), .reset_counter(1'b0), .reset_draw(reset_draw[0]), .erase(erase), .x_out(x_out[0]), .y_out(y_out[0]), .done(done_draw[0]));
+	bird b1(.cclock(frame_reached), .dclock(CLOCK_50), .y(7'd24), .bird_on(bird_on[1]), .reset_counter(1'b0), .reset_draw(reset_draw[1]), .erase(erase), .x_out(x_out[1]), .y_out(y_out[1]), .done(done_draw[1]));
+	bird b2(.cclock(frame_reached), .dclock(CLOCK_50), .y(7'd38), .bird_on(bird_on[2]), .reset_counter(1'b0), .reset_draw(reset_draw[2]), .erase(erase), .x_out(x_out[2]), .y_out(y_out[2]), .done(done_draw[2]));
+	bird b3(.cclock(frame_reached), .dclock(CLOCK_50), .y(7'd52), .bird_on(bird_on[3]), .reset_counter(1'b0), .reset_draw(reset_draw[3]), .erase(erase), .x_out(x_out[3]), .y_out(y_out[3]), .done(done_draw[3]));
+	bird b4(.cclock(frame_reached), .dclock(CLOCK_50), .y(7'd66), .bird_on(bird_on[4]), .reset_counter(1'b0), .reset_draw(reset_draw[4]), .erase(erase), .x_out(x_out[4]), .y_out(y_out[4]), .done(done_draw[4]));
+	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .y(7'd80), .bird_on(bird_on[5]), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .erase(erase), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
+	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .y(7'd94), .bird_on(bird_on[6]), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
 	
 	hunter h0(.clock(CLOCK_50), .reset_draw(reset_draw_h), .x_out(x_out_h), .y_out(y_out_h), .done(done_draw_h));
 	draw_laser dl(.clock(CLOCK_50), .x(x_out_h), .y(y_out_h), .laser_on(laser_on), .plot_x(x_out_l), .plot_y(y_out_l), .done(done_draw_l));
@@ -392,10 +392,11 @@ module bird_control(clock, reset, bird_on, move_freq);
 	end
 endmodule
 
-module bird(cclock, dclock, bird_on, reset_counter, reset_draw, erase, x_out, y_out, done/*, test_x, test_y*/);
+module bird(cclock, dclock, y, bird_on, reset_counter, reset_draw, erase, x_out, y_out, done/*, test_x, test_y*/);
 	//cclock = clock for bird_counter
 	//dclock = clock for draw_bird
 	input cclock, dclock;
+	input [6:0] y;
 	input reset_counter, reset_draw;
 	input erase, bird_on;
 	output [7:0] x_out/*, test_x*/;
@@ -404,7 +405,6 @@ module bird(cclock, dclock, bird_on, reset_counter, reset_draw, erase, x_out, y_
 
 	wire [7:0] x;
 	reg [7:0] draw_x;
-	wire [6:0] y = $urandom%110 + 10;
 //	assign test_x = x;
 //	assign test_y = y;
 	
