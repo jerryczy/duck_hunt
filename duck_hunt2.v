@@ -37,7 +37,7 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 		
 	input CLOCK_50;
 	input [1:0] KEY;
-	input [6:0] LEDR;
+	output [6:0] LEDR;
 	output			VGA_CLK;   				//	VGA Clock
 	output			VGA_HS;					//	VGA H_SYNC
 	output			VGA_VS;					//	VGA V_SYNC
@@ -73,7 +73,9 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	
 	wire reset;
 	assign reset = KEY[0];
-	assign LEDR[6:0] = collision[6:0];
+	assign LEDR = collision;
+	
+//	assign reset = (collision == bird_on) ? 1 : 0;
 	
 	localparam 	HOLD = 5'd0,
 				ERASE_BIRD_0 = 5'd1,
@@ -597,15 +599,15 @@ module keyboard (clock, valid, makeBreak, data_in, move_l, move_r, shoot);
 		if (valid) begin
 			if (makeBreak)
 				case (data_in)
-					8'hE075: shoot = 1'b1;
-					8'hE06B: move_l = 1'b1;
-					8'hE074: move_r = 1'b1;
+					8'h75: shoot = 1'b1;
+					8'h6B: move_l = 1'b1;
+					8'h74: move_r = 1'b1;
 				endcase
 			else
 				case (data_in)
-					8'hE0F075: shoot = 1'b0;
-					8'hE0F06B: move_l = 1'b0;
-					8'hE0F074: move_r = 1'b0;
+					8'h75: shoot = 1'b0;
+					8'h6B: move_l = 1'b0;
+					8'h74: move_r = 1'b0;
 				endcase
 		end
 	end
