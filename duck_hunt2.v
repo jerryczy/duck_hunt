@@ -755,7 +755,6 @@ module draw_laser(clock, x, y, laser_on, plot_x, plot_y, done);
 	
 	assign plot_x = x;
 	assign plot_y = new_y;
-	
 endmodule
 
 
