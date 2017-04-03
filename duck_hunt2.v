@@ -541,7 +541,7 @@ module draw_bird(
 	
 	always @(posedge clock)
 	begin
-		if (reset)
+		if (reset) 
 			current_state <= BIRD_0;
 		else
 			current_state <= next_state;
