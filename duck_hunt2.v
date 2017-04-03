@@ -177,11 +177,6 @@ module duck_hunt(CLOCK_50, KEY,
 				plot_x = x_out_h;
 				plot_y = y_out_h;
 			end
-			default: begin
-				colour = 3'b000;
-				plot_x = 0;
-				plot_y = 0;
-			end
  			DRAW_LASER: begin
 				colour = 3'b010;
 				plot_x = x_out_l;
@@ -191,6 +186,11 @@ module duck_hunt(CLOCK_50, KEY,
 				colour = 3'b000;
 				plot_x = x_out_l;
 				plot_y = y_out_l;
+			end
+			default: begin
+				colour = 3'b000;
+				plot_x = 0;
+				plot_y = 0;
 			end
 		endcase
 	end
@@ -208,8 +208,8 @@ module duck_hunt(CLOCK_50, KEY,
 	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[6]), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
 	
 	hunter h0(.clock(CLOCK_50), .reset_draw(reset_draw_h), .x_out(x_out_h), .y_out(y_out_h), .done(done_draw_h));
-	draw_laser(.clock(clock), .x(x_out_h), .y(y_out_h), .laser_on(laser_on), .plot_x(x_out_l), .plot_y(y_out_l), .done(done_draw_l));
-	draw_control dc(.clock(CLOCK_50), .one_frame(one_frame), .done_draw(done_draw), .done_draw_h(done_draw_h), done_draw_l(done_draw_l), .reset(reset), .bird_on(bird_on), .reset_draw(reset_draw), .reset_draw_h(reset_draw_h), .laser_on(laser_on), .current_state(current_state));
+	draw_laser dl(.clock(clock), .x(x_out_h), .y(y_out_h), .laser_on(laser_on), .plot_x(x_out_l), .plot_y(y_out_l), .done(done_draw_l));
+	draw_control dc(.clock(CLOCK_50), .one_frame(one_frame), .done_draw(done_draw), .done_draw_h(done_draw_h), .done_draw_l(done_draw_l), .reset(reset), .bird_on(bird_on), .reset_draw(reset_draw), .reset_draw_h(reset_draw_h), .laser_on(laser_on), .current_state(current_state));
 	bird_control bc(.clock(CLOCK_50), .reset(reset), .bird_on(bird_on), .move_freq(move_freq));
 	
 	frame_counter fbird(.num(6'b111111/*move_freq*/), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
@@ -244,7 +244,7 @@ module draw_control(clock, one_frame, bird_on, done_draw, done_draw_h, done_draw
 	input done_draw_h, done_draw_l;
 	output reg [6:0] reset_draw = 7'b0;
 	output reg reset_draw_h;
-	output laser_on;
+	output reg laser_on;
 	
 	localparam 	HOLD = 5'd0,
 				ERASE_BIRD_0 = 5'd1,
@@ -568,9 +568,9 @@ module bird_counter(clock, reset, enable, new_x);
 endmodule
 
 
-module hunter(clock, DIRECTIONS_FROM_KEYBOARD, reset_draw, x_out, y_out, done);
+module hunter(clock, /*DIRECTIONS_FROM_KEYBOARD,*/ reset_draw, x_out, y_out, done);
 	input clock;
-	input DIRECTIONS_FROM_KEYBOARD;
+	// input DIRECTIONS_FROM_KEYBOARD;
 	input reset_draw;
 	output [7:0] x_out;
 	output [6:0] y_out;
