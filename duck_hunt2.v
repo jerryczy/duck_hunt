@@ -23,7 +23,7 @@
 	end
 */
 
-module duck_hunt(CLOCK_50, KEY,
+module duck_hunt(CLOCK_50, KEY, LEDR,
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
 		VGA_VS,							//	VGA V_SYNC
@@ -35,6 +35,7 @@ module duck_hunt(CLOCK_50, KEY,
 		
 	input CLOCK_50;
 	input [1:0] KEY;
+	input [6:0] LEDR;
 	output			VGA_CLK;   				//	VGA Clock
 	output			VGA_HS;					//	VGA H_SYNC
 	output			VGA_VS;					//	VGA V_SYNC
@@ -57,8 +58,9 @@ module duck_hunt(CLOCK_50, KEY,
 	wire [4:0] current_state;
 	wire frame_reached, one_frame;
 	wire [3:0] move_freq;
-	wire [6:0] bird_on; 
 
+	wire [6:0] bird_on; 
+	wire [6:0] collision; //If there is a collision, reset_counter, so a new bird is effectively spawned.
 	wire [6:0] done_draw;
 	wire [6:0] reset_draw;
 	wire done_draw_h, done_draw_l;
@@ -66,6 +68,7 @@ module duck_hunt(CLOCK_50, KEY,
 	
 	wire reset;
 	assign reset = KEY[0];
+	assign LEDR [6:0] = collision [6:0];
 	
 	localparam 	HOLD = 5'd0,
 				ERASE_BIRD_0 = 5'd1,
@@ -207,12 +210,21 @@ module duck_hunt(CLOCK_50, KEY,
 	bird b5(.cclock(frame_reached), .dclock(CLOCK_50), .y(7'd80), .bird_on(bird_on[5]), .reset_counter(1'b0), .reset_draw(reset_draw[5]), .erase(erase), .x_out(x_out[5]), .y_out(y_out[5]), .done(done_draw[5]));
 	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .y(7'd94), .bird_on(bird_on[6]), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
 	
+	collision_check c0(.laser_x(8'd90), .bird_x(x_out[0]), .q(collision[0]));
+	collision_check c1(.laser_x(8'd90), .bird_x(x_out[1]), .q(collision[1]));
+	collision_check c2(.laser_x(8'd90), .bird_x(x_out[2]), .q(collision[2]));
+	collision_check c3(.laser_x(8'd90), .bird_x(x_out[3]), .q(collision[3]));
+	collision_check c4(.laser_x(8'd90), .bird_x(x_out[4]), .q(collision[4]));
+	collision_check c5(.laser_x(8'd90), .bird_x(x_out[5]), .q(collision[5]));
+	collision_check c6(.laser_x(8'd90), .bird_x(x_out[6]), .q(collision[6]));
+	
 	hunter h0(.clock(CLOCK_50), .reset_draw(reset_draw_h), .x_out(x_out_h), .y_out(y_out_h), .done(done_draw_h));
 	draw_laser dl(.clock(CLOCK_50), .x(x_out_h), .y(y_out_h), .laser_on(laser_on), .plot_x(x_out_l), .plot_y(y_out_l), .done(done_draw_l));
-	draw_control dc(.clock(CLOCK_50), .one_frame(one_frame), .done_draw(done_draw), .done_draw_h(done_draw_h), .done_draw_l(done_draw_l), .reset(reset), .bird_on(bird_on), .reset_draw(reset_draw), .reset_draw_h(reset_draw_h), .laser_on(laser_on), .current_state(current_state));
+	
+	main_control mc(.clock(CLOCK_50), .one_frame(one_frame), .done_draw(done_draw), .done_draw_h(done_draw_h), .done_draw_l(done_draw_l), .reset(reset), .bird_on(bird_on), .reset_draw(reset_draw), .reset_draw_h(reset_draw_h), .laser_on(laser_on), .current_state(current_state));
 	bird_control bc(.clock(CLOCK_50), .reset(reset), .bird_on(bird_on), .move_freq(move_freq));
 	
-	frame_counter fbird(.num(6'b111111/*move_freq*/), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
+	frame_counter fbird(.num(6'b11/*move_freq*/), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
 	rate_divider f1(.clock(CLOCK_50), .reset(1'b0), .one_frame(one_frame));
 
 	/*
@@ -238,7 +250,7 @@ module duck_hunt(CLOCK_50, KEY,
 	*/
 endmodule
 
-module draw_control(clock, one_frame, bird_on, done_draw, done_draw_h, done_draw_l, reset, reset_draw, reset_draw_h, laser_on, current_state);
+module main_control(clock, one_frame, bird_on, done_draw, done_draw_h, done_draw_l, reset, reset_draw, reset_draw_h, laser_on, current_state);
 	input clock, reset, one_frame;
 	input [6:0] done_draw, bird_on;
 	input done_draw_h, done_draw_l;
