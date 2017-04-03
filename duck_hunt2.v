@@ -208,7 +208,7 @@ module duck_hunt(CLOCK_50, KEY,
 	bird b6(.cclock(frame_reached), .dclock(CLOCK_50), .bird_on(bird_on[6]), .reset_counter(1'b0), .reset_draw(reset_draw[6]), .erase(erase), .x_out(x_out[6]), .y_out(y_out[6]), .done(done_draw[6]));
 	
 	hunter h0(.clock(CLOCK_50), .reset_draw(reset_draw_h), .x_out(x_out_h), .y_out(y_out_h), .done(done_draw_h));
-	draw_laser dl(.clock(clock), .x(x_out_h), .y(y_out_h), .laser_on(laser_on), .plot_x(x_out_l), .plot_y(y_out_l), .done(done_draw_l));
+	draw_laser dl(.clock(CLOCK_50), .x(x_out_h), .y(y_out_h), .laser_on(laser_on), .plot_x(x_out_l), .plot_y(y_out_l), .done(done_draw_l));
 	draw_control dc(.clock(CLOCK_50), .one_frame(one_frame), .done_draw(done_draw), .done_draw_h(done_draw_h), .done_draw_l(done_draw_l), .reset(reset), .bird_on(bird_on), .reset_draw(reset_draw), .reset_draw_h(reset_draw_h), .laser_on(laser_on), .current_state(current_state));
 	bird_control bc(.clock(CLOCK_50), .reset(reset), .bird_on(bird_on), .move_freq(move_freq));
 	
@@ -290,7 +290,7 @@ module draw_control(clock, one_frame, bird_on, done_draw, done_draw_h, done_draw
 			ERASE_BIRD_6: 	next_state = done_draw[6] ? DRAW_BIRD_6 : ERASE_BIRD_6;
 			DRAW_BIRD_6: 	next_state = done_draw[6] ? ERASE_HUNTER : DRAW_BIRD_6;
 			ERASE_HUNTER: next_state = done_draw_h ? DRAW_HUNTER : ERASE_HUNTER;
-			DRAW_HUNTER: next_state = done_draw_h ? DRAW_LASER : DRAW_HUNTER;
+			DRAW_HUNTER: next_state = done_draw_h ? HOLD : DRAW_HUNTER;
  			DRAW_LASER: next_state = done_draw_l ? ERASE_LASER : DRAW_LASER;
  			ERASE_LASER: next_state = done_draw_l ? HOLD : ERASE_LASER;
 			default: next_state = HOLD;
@@ -757,6 +757,16 @@ module draw_laser(clock, x, y, laser_on, plot_x, plot_y, done);
 	assign plot_y = new_y;
 endmodule
 
+/*
+Goes high if collision is detected.
+*/
+module collision_check(laser_x, bird_x, q);
+	input [7:0] laser_x;
+	input [7:0] bird_x;
+	output q;
+
+	assign q = (laser_x <= bird_x && laser_x >= (bird_x-5)) ? 1 : 0;
+endmodule
 
 module frame_counter(num, clock, reset, q); // output 1 if designated number of frames reached.
 	input [5:0] num;
