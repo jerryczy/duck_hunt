@@ -23,7 +23,7 @@
 	end
 */
 
-module duck_hunt(CLOCK_50, KEY, LEDR,
+module duck_hunt(CLOCK_50, KEY, LEDR, SW,
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
 		VGA_VS,							//	VGA V_SYNC
@@ -36,8 +36,9 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 		PS2_CLK);
 		
 	input CLOCK_50;
-	input [1:0] KEY;
-	output [6:0] LEDR;
+	input [3:0] KEY;
+	input [6:0] SW;
+	output [8:0] LEDR;
 	output			VGA_CLK;   				//	VGA Clock
 	output			VGA_HS;					//	VGA H_SYNC
 	output			VGA_VS;					//	VGA V_SYNC
@@ -59,7 +60,7 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	
 	wire [4:0] current_state;
 	wire frame_reached, one_frame;
-	wire [3:0] move_freq;
+	wire [4:0] move_freq;
 	wire [6:0] bird_on; 
 	wire [6:0] collision; //If there is a collision, reset_counter, so a new bird is effectively spawned.
 
@@ -70,10 +71,11 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	
 	wire move_l, move_r, shoot, valid, makeBreak;
 	wire [7:0] data_in;
+	//wire q;
+	//assign q = ~KEY[0];
 	
-	wire reset;
-	assign reset = KEY[0];
-	assign LEDR = collision;
+	//wire reset;
+//	assign LEDR = collision;
 	
 //	assign reset = (collision == bird_on) ? 1 : 0;
 	
@@ -229,18 +231,19 @@ module duck_hunt(CLOCK_50, KEY, LEDR,
 	keyboard_press_driver k1(.CLOCK_50(CLOCK_50), .valid(valid), .makeBreak(makeBreak), .outCode(data_in), .PS2_DAT(PS2_DAT), .reset(1'b0));
 	keyboard kb(.clock(CLOCK_50), .valid(valid), .makeBreak(makeBreak), .data_in(data_in), .move_l(move_l), .move_r(move_r), .shoot(shoot));
 	
-	hunter h0(.clock(CLOCK_50), .move_l(move_l), .move_r(move_r), .reset_draw(reset_draw_h), .x_out(x_out_h), .y_out(y_out_h), .hunter_x(hunter_pos), .done(done_draw_h));
-	draw_laser dl(.clock(CLOCK_50), .x(hunter_pos), .reset_draw_l(reset_draw_l), .laser_on(laser_on), .reloaded(reloaded), .plot_x(x_out_l), .plot_y(y_out_l), .done(done_draw_l));
-	laser_reload lr(.clock(CLOCK_50), .shoot(shoot), .reloaded(reloaded));
+	hunter h0(.clock(CLOCK_50), .move_l(~KEY[2]), .move_r(~KEY[1]), .reset_draw(reset_draw_h), .x_out(x_out_h), .y_out(y_out_h), .hunter_x(hunter_pos), .done(done_draw_h), .erase(erase));
+	draw_laser dl(.clock(CLOCK_50), .x(hunter_pos), .reset_draw_l(reset_draw_l), .laser_on(laser_on), .shoot(~KEY[3]), .reloaded(reloaded), .plot_x(x_out_l), .plot_y(y_out_l), .done(done_draw_l));
+	laser_reload lr(.clock(CLOCK_50), .shoot(~KEY[3]), .reloaded(reloaded));
 	
 	draw_control dc(.clock(CLOCK_50), .one_frame(one_frame), .bird_on(bird_on), .done_draw(done_draw), .done_draw_h(done_draw_h), .done_draw_l(done_draw_l), .reset(reset), .reset_draw(reset_draw), .reset_draw_h(reset_draw_h), .reset_draw_l(reset_draw_l), .laser_on(laser_on), .current_state(current_state));
-	bird_control bc(.clock(CLOCK_50), .reset(reset), .bird_on(bird_on), .move_freq(move_freq));
+	bird_control bc(.clock(CLOCK_50), .reset(reset), .KEY(~KEY[0]), .bird_on(bird_on), .move_freq(move_freq));
 	
-	frame_counter fbird(.num(6'b111111/*move_freq*/), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
+	frame_counter fbird(.num(move_freq), .clock(CLOCK_50), .reset(1'b0), .q(frame_reached));
 	rate_divider f1(.clock(CLOCK_50), .reset(1'b0), .one_frame(one_frame));
 
+
 	vga_adapter VGA(
-		.resetn(KEY[0]),
+		.resetn(1'b1),
 		.clock(CLOCK_50),
 		.colour(colour),
 		.x(plot_x),
@@ -313,7 +316,7 @@ module draw_control(clock, one_frame, bird_on, done_draw, done_draw_h, done_draw
 			ERASE_BIRD_6: 	next_state = done_draw[6] ? DRAW_BIRD_6 : ERASE_BIRD_6;
 			DRAW_BIRD_6: 	next_state = done_draw[6] ? ERASE_HUNTER : DRAW_BIRD_6;
 			ERASE_HUNTER: next_state = done_draw_h ? DRAW_HUNTER : ERASE_HUNTER;
-			DRAW_HUNTER: next_state = done_draw_h ? DRAW_LASER : DRAW_HUNTER;
+			DRAW_HUNTER: next_state = done_draw_h ? HOLD : DRAW_HUNTER;
  			DRAW_LASER: next_state = done_draw_l ? ERASE_LASER : DRAW_LASER;
  			ERASE_LASER: next_state = done_draw_l ? HOLD : ERASE_LASER;
 			default: next_state = HOLD;
@@ -369,20 +372,22 @@ endmodule
 /*
 Control for number of birds/speed.
 */
-module bird_control(clock, reset, bird_on, move_freq);
+module bird_control(clock, KEY, reset, bird_on, move_freq);
 	input clock, reset;
+	input [0:0] KEY;
 	output reg [6:0] bird_on = 7'b0000001;
-	output reg [3:0] move_freq = 12;
+	output reg [4:0] move_freq = 30;
 	
+	assign q = KEY[0];
 	reg [9:0] seconds = 0;
 	
-	frame_counter f60(.num(6'd60), .clock(clock), .reset(1'b0), .q(q)); 
+	//frame_counter f60(.num(6'd60), .clock(clock), .reset(1'b0), .q(q)); 
 	
-	always@(posedge clock)
+	always@(posedge q)
 	begin
 		if (reset)
 			seconds <= 0;
-		else if (q)
+		else
 			seconds <= seconds + 1;
 	end
 	
@@ -390,19 +395,19 @@ module bird_control(clock, reset, bird_on, move_freq);
 	begin
 		if (seconds <= 5) begin
 			bird_on <= 7'b0000001;
-			move_freq <= 12;
+			move_freq <= 30;
 		end
 		else if (seconds <= 10) begin
 			bird_on <= 7'b0000011;
-			move_freq <= 12;
+			move_freq <= 24;
 		end
 		else if (seconds <= 15) begin
 			bird_on <= 7'b0000111;
-			move_freq <= 9;
+			move_freq <= 18;
 		end
 		else if (seconds <= 20) begin
 			bird_on <= 7'b0001111;
-			move_freq <= 9;
+			move_freq <= 12;
 		end
 		else if (seconds <= 25) begin
 			bird_on <= 7'b0011111;
@@ -412,9 +417,9 @@ module bird_control(clock, reset, bird_on, move_freq);
 			bird_on <= 7'b0111111;
 			move_freq <= 3;
 		end
-		else begin
+		else if (seconds <= 35) begin
 			bird_on <= 7'b1111111;
-			move_freq <= 1;
+			move_freq <= 3;
 		end
 	end
 endmodule
@@ -614,30 +619,46 @@ module keyboard (clock, valid, makeBreak, data_in, move_l, move_r, shoot);
 	
 endmodule
 
-module hunter(clock, move_l, move_r, reset_draw, x_out, y_out, hunter_x, done);
+module hunter(clock, move_l, move_r, reset_draw, x_out, y_out, hunter_x, done, erase);
 	input clock;
 	input move_l, move_r;
 	input reset_draw;
+	input erase;
 	output [7:0] x_out;
 	output [6:0] y_out;
 	output [7:0] hunter_x;
 	output done;
 	
-	wire [6:0] y = 8'd115;
+	wire [6:0] y = 7'd115;
+	wire one_frame;
+
 	
 	reg [7:0] x = 8'd75;
 	
-	always @(posedge clock)
+	reg [7:0] draw_x, prev_x;
+	
+	always @(posedge one_frame)
 	begin
-		if (move_l & x > 4)
-			x <= x - 1;
-		else if (move_r & x < 156)
-			x <= x + 1;
+		if (move_l & x > 4) begin
+				prev_x = x;
+				x <= x - 1;
+		end
+		else if (move_r & x < 156) begin
+				prev_x = x;
+				x <= x + 1;
+		end
 	end
 	
+	always@(*) begin
+	if(erase)
+		draw_x = prev_x;
+	else
+		draw_x = x;
+	end
+
 	assign hunter_x = x;
-	
-	draw_hunter dh(.clock(clock), .reset(reset_draw), .x(x), .y(y), .x_out(x_out), .y_out(y_out), .done(done)); 
+	rate_divider f1(.clock(clock), .reset(1'b0), .one_frame(one_frame));
+	draw_hunter dh(.clock(clock), .reset(reset_draw), .x(draw_x), .y(y), .x_out(x_out), .y_out(y_out), .done(done)); 
 endmodule
 
 
@@ -787,10 +808,10 @@ module draw_hunter(clock, reset, x, y, x_out, y_out, done);
 	assign done = (current_state == END && ~reset) ? 1 : 0;
 endmodule
 
-module draw_laser(clock, x, reset_draw_l, laser_on, reloaded, plot_x, plot_y, done);
+module draw_laser(clock, x, reset_draw_l, laser_on, shoot, reloaded, plot_x, plot_y, done);
 	input clock;
 	input [7:0] x;
-	input reset_draw_l, laser_on, reloaded;
+	input reset_draw_l, laser_on, shoot, reloaded;
 	output [7:0] plot_x;
 	output [6:0] plot_y;
 	output done;
@@ -799,10 +820,12 @@ module draw_laser(clock, x, reset_draw_l, laser_on, reloaded, plot_x, plot_y, do
 	 
 	always @(posedge clock)
 	begin
-		if (reset_draw_l)
-			new_y <= 115;
-		else if (laser_on)
-			new_y <= new_y - 1;
+		if (shoot) begin
+			if (reset_draw_l)
+				new_y <= 114;
+			else if (laser_on)
+				new_y <= new_y - 1;
+		end
 	end
 	
 	assign done = (new_y == 0 | ~reloaded) ? 1 : 0;
@@ -860,31 +883,6 @@ module frame_counter(num, clock, reset, q); // output 1 if designated number of 
 	
 	assign q = (temp == 0) ? 1 : 0;
 endmodule
-
-module random(clock, reset, y);
-	input clock;
-   input reset;
-   output [6:0] y;
-	
-	reg [2:0] num, num_next;
-	
-	assign y = num * 4'b1010 + 3'b101;
-
-	always @(*) 
-	begin
-		num_next[2] = num[2] ^ num[0];
-		num_next[1] = num[1] ^ num_next[2];
-		num_next[0] = num[0] ^ num_next[1];
-	end
-
-	always @(posedge clock or negedge reset)
-	begin
-		if(!reset)
-			num <= 3'b010;
-		else
-			num <= num_next;
-	end
-endmodule
 	
 module rate_divider(clock, reset, one_frame); //Goes high every 60th of a second.
 	input clock;
@@ -892,16 +890,16 @@ module rate_divider(clock, reset, one_frame); //Goes high every 60th of a second
 	
 	output one_frame;
 	
-	reg [19:0] q = 2'b11;
+	reg [19:0] q = 20'b11001011011100110110 - 1;
 	
 	always @(posedge clock)
 	begin
 		if (reset)
-			q <= 1'b1;
+			q <= 20'b11001011011100110110 - 1;
 		else
 			begin
 				if (q == 0)
-					q <= 2'b11 - 1; //20'b11001011011100110110;//(1/60s)
+					q <= 20'b11001011011100110110 - 1;//(1/60s)
 				else
 					q <= q - 1'b1;
 			end
